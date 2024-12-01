@@ -1,3 +1,4 @@
+import React from 'react'
 import { Metadata } from 'next'
 import { TaskBoard } from '@/components/TaskBoard'
 import { IntegrationsSidebar } from '@/components/IntegrationsSidebar'
@@ -5,7 +6,7 @@ import { MainSidebar } from '@/components/MainSidebar'
 import { SidebarProvider } from "@/components/ui/sidebar"
 
 export const metadata: Metadata = {
-  title: 'LocalSunsama - Task Management',
+  title: 'SunClaude - Easy To Dos and Focused Task Management',
   description: 'Manage your daily and weekly tasks efficiently',
 }
 
