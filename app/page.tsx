@@ -4,6 +4,7 @@ import { TaskBoard } from '@/components/TaskBoard'
 import { IntegrationsSidebar } from '@/components/IntegrationsSidebar'
 import { Sidebar as MainSidebar } from '@/components/MainSidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export const metadata: Metadata = {
   title: 'SunClaude - Easy To Dos and Focused Task Management',
@@ -12,12 +13,14 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <SidebarProvider>
-      <div className="grid h-screen grid-cols-[auto_1fr_auto]">
-        <MainSidebar />
-        <TaskBoard />
-        <IntegrationsSidebar />
-      </div>
-    </SidebarProvider>
+    <TooltipProvider>
+      <SidebarProvider>
+        <div className="grid h-screen grid-cols-[auto_1fr_auto]">
+          <MainSidebar />
+          <TaskBoard />
+          <IntegrationsSidebar />
+        </div>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
