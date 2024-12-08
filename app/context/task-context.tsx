@@ -1,13 +1,41 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { Task, TaskContextType, TaskStatus } from '@/types/task'
 import { v4 as uuidv4 } from 'uuid'
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined)
+const STORAGE_KEY = 'sunclaude:tasks'
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // Load tasks from localStorage on mount
+  useEffect(() => {
+    const storedTasks = localStorage.getItem(STORAGE_KEY)
+    if (storedTasks) {
+      try {
+        const parsedTasks = JSON.parse(storedTasks)
+        setTasks(parsedTasks.map((task: any) => ({
+          ...task,
+          dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+          createdAt: new Date(task.createdAt),
+          updatedAt: new Date(task.updatedAt),
+        })))
+      } catch (error) {
+        console.error('Error parsing stored tasks:', error)
+      }
+    }
+    setIsHydrated(true)
+  }, [])
+
+  // Update localStorage when tasks change
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
+    }
+  }, [tasks, isHydrated])
 
   const addTask = useCallback((taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTask: Task = {
@@ -50,6 +78,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       updateTask,
       deleteTask,
       moveTask,
+      isHydrated,
     }}>
       {children}
     </TaskContext.Provider>

@@ -13,9 +13,9 @@ import {
 } from './ui/context-menu'
 
 const priorityStyles: Record<TaskPriority, string> = {
-  low: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-red-500',
+  low: 'bg-[hsl(var(--priority-low))]',
+  medium: 'bg-[hsl(var(--priority-medium))]',
+  high: 'bg-[hsl(var(--priority-high))]',
 }
 
 interface TaskCardProps {
@@ -28,7 +28,7 @@ export function TaskCard({ task }: TaskCardProps) {
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        <div className="rounded-lg border bg-background p-3 shadow-sm">
+        <div className="rounded-lg border bg-[hsl(var(--task-card-background))] hover:bg-[hsl(var(--task-card-hover))] border-[hsl(var(--task-card-border))] p-3 shadow-sm transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{task.title}</span>
             <span

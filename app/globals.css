@@ -34,6 +34,24 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Task Priority Colors */
+    --priority-low: 142 72% 29%;
+    --priority-medium: 45 93% 47%;
+    --priority-high: 0 84% 60%;
+
+    /* Task Card Styles */
+    --task-card-border: var(--border);
+    --task-card-background: var(--background);
+    --task-card-hover: var(--accent);
+
+    /* Label Colors */
+    --label-background: var(--primary);
+    --label-foreground: var(--primary-foreground);
+
+    /* Task Board Colors */
+    --column-background: var(--muted);
+    --column-border: var(--border);
   }
 
   .dark {
@@ -66,5 +84,23 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Task Priority Colors - Dark Mode */
+    --priority-low: 142 72% 35%;
+    --priority-medium: 45 93% 47%;
+    --priority-high: 0 84% 60%;
+
+    /* Task Card Styles - Dark Mode */
+    --task-card-border: var(--border);
+    --task-card-background: var(--background);
+    --task-card-hover: var(--accent);
+
+    /* Label Colors - Dark Mode */
+    --label-background: var(--primary);
+    --label-foreground: var(--primary-foreground);
+
+    /* Task Board Colors - Dark Mode */
+    --column-background: var(--muted);
+    --column-border: var(--border);
   }
 } 
