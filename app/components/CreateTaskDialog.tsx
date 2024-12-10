@@ -13,10 +13,10 @@ import { Input } from '@/components/ui/input'
 import { TaskPriority } from '@/types/task'
 
 interface CreateTaskDialogProps {
-  open: boolean
+  isOpen: boolean
   onOpenChange: (open: boolean) => void
 }
-
+export function CreateTaskDialog({ isOpen, onOpenChange }: CreateTaskDialogProps) {
 export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) {
   const { addTask } = useTaskContext()
   const [title, setTitle] = React.useState('')
@@ -38,7 +38,7 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
