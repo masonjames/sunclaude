@@ -5,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { useDraggable } from "@dnd-kit/core"
 import { cn } from "@/lib/utils"
+import { Loader2 } from "lucide-react"
 
 interface IntegrationItem {
   id: string
@@ -17,6 +18,8 @@ interface IntegrationItem {
 interface IntegrationPanelProps {
   title: string
   items: IntegrationItem[]
+  loading: boolean
+  error?: string
   onAddToBoard: (item: IntegrationItem) => void
 }
 
@@ -62,22 +65,36 @@ function IntegrationItemCard({ item, onAddToBoard }: { item: IntegrationItem; on
   )
 }
 
-export function IntegrationPanel({ title, items, onAddToBoard }: IntegrationPanelProps) {
+export function IntegrationPanel({ title, items, loading, error, onAddToBoard }: IntegrationPanelProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b p-4">
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {items.map((item) => (
-            <IntegrationItemCard
-              key={item.id}
-              item={item}
-              onAddToBoard={onAddToBoard}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex h-32 items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+            {error}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+            No items found
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {items.map((item) => (
+              <IntegrationItemCard
+                key={item.id}
+                item={item}
+                onAddToBoard={onAddToBoard}
+              />
+            ))}
+          </div>
+        )}
       </ScrollArea>
     </div>
   )

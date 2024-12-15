@@ -12,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="flex h-screen">
       <MainSidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 ml-[60px] mr-[60px] overflow-auto">
         <TaskBoard />
       </main>
       <IntegrationsSidebar />

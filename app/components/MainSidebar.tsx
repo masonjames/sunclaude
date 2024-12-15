@@ -12,17 +12,28 @@ export function MainSidebar() {
 
   return (
     <div className={cn(
-      "flex h-screen flex-col border-r bg-background transition-all duration-300",
+      "fixed top-0 left-0 z-10 flex h-screen flex-col border-r bg-background transition-all duration-300",
       isOpen ? "w-[240px]" : "w-[60px]"
     )}>
       <div className="flex h-14 items-center justify-between border-b px-4">
         {isOpen ? (
           <>
             <h1 className="text-lg font-semibold">Sunclaude</h1>
-            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
           </>
         ) : (
-          <Button variant="ghost" size="icon" className="mx-auto" onClick={() => setIsOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mx-auto"
+            onClick={() => setIsOpen(true)}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         )}
@@ -37,7 +48,7 @@ export function MainSidebar() {
         >
           <Sun className="h-4 w-4" />
           {isOpen && <span className="ml-2">Today</span>}
-          <Badge variant="notification" className="flex items-center justify-center">
+          <Badge variant="notification" className="absolute -right-1 -top-1">
             2
           </Badge>
         </Button>
@@ -49,7 +60,10 @@ export function MainSidebar() {
           )}
         >
           <Calendar className="h-4 w-4" />
-          {isOpen && <span className="ml-2">This Week</span>}
+          {isOpen && <span className="ml-2">Calendar</span>}
+          <Badge variant="notification" className="absolute -right-1 -top-1">
+            5
+          </Badge>
         </Button>
         <Button
           variant="ghost"
@@ -59,18 +73,13 @@ export function MainSidebar() {
           )}
         >
           <Focus className="h-4 w-4" />
-          {isOpen && <span className="ml-2">Focus Mode</span>}
+          {isOpen && <span className="ml-2">Focus</span>}
         </Button>
       </nav>
       {isOpen && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mb-4 ml-auto mr-2"
-          onClick={() => setIsOpen(false)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        <div className="border-t p-4">
+          <ThemeToggle />
+        </div>
       )}
     </div>
   )
