@@ -1,67 +1,118 @@
 "use client"
 
 import * as React from "react"
-import { ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Mail, ListTodo, FileText, LineChart } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Badge } from "@/components/ui/badge"
+import { useSidebar } from "@/components/ui/sidebar"
+import { cn } from "@/lib/utils"
 
 interface Integration {
   id: number
   name: string
+  icon: React.ElementType
   color: string
+  unread?: number
 }
 
 const integrations: Integration[] = [
-  { id: 1, name: "Gmail", color: "bg-red-500" },
-  { id: 2, name: "Asana", color: "bg-orange-500" },
-  { id: 3, name: "Notion", color: "bg-gray-500" },
-  { id: 4, name: "Linear", color: "bg-blue-500" },
+  {
+    id: 1,
+    name: "Gmail",
+    icon: Mail,
+    color: "bg-red-500",
+    unread: 3
+  },
+  {
+    id: 2,
+    name: "Asana",
+    icon: ListTodo,
+    color: "bg-orange-500"
+  },
+  {
+    id: 3,
+    name: "Notion",
+    icon: FileText,
+    color: "bg-gray-500",
+    unread: 1
+  },
+  {
+    id: 4,
+    name: "Linear",
+    icon: LineChart,
+    color: "bg-blue-500"
+  },
 ]
 
 export const IntegrationsSidebar = () => {
-  const [selectedIntegration, setSelectedIntegration] = React.useState<string | null>(null)
+  const { isOpen: isMainOpen } = useSidebar()
+  const [isOpen, setIsOpen] = React.useState(true)
 
   return (
-    <aside className="w-64 border-l">
+    <div
+      className={cn(
+        "flex h-screen flex-col border-l bg-background transition-all duration-300",
+        isOpen ? "w-[240px]" : "w-[60px]"
+      )}
+    >
       <div className="flex h-14 items-center justify-between border-b px-4">
-        <h3 className="font-medium">Integrations</h3>
+        {isOpen ? (
+          <>
+            <h2 className="text-lg font-semibold">Integrations</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsOpen(false)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mx-auto"
+            onClick={() => setIsOpen(true)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
       </div>
-      <div className="p-4">
-        {integrations.map((integration) => (
-          <Sheet key={integration.id}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                className="mb-2 w-full justify-between"
-                onClick={() => setSelectedIntegration(integration.name)}
-              >
-                <div className="flex items-center">
-                  <div className={`mr-2 h-2 w-2 rounded-full ${integration.color}`} />
-                  {integration.name}
-                </div>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">{integration.name} Tasks</h3>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border p-3"
-                    draggable="true"
-                  >
-                    <div className="text-sm font-medium">
-                      {integration.name} Task {i + 1}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">Due today</div>
-                  </div>
-                ))}
+      <div className="flex-1 space-y-2 p-2">
+        {integrations.map((integration) => {
+          const Icon = integration.icon
+          return (
+            <Button
+              key={integration.id}
+              variant="ghost"
+              className={cn(
+                "relative w-full",
+                isOpen ? "justify-start px-4" : "justify-center px-0"
+              )}
+            >
+              <div className="relative">
+                <Icon className={cn(
+                  "h-4 w-4",
+                  !isOpen && "text-foreground"
+                )} />
+                <div className={cn(
+                  "absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full",
+                  integration.color
+                )} />
               </div>
-            </SheetContent>
-          </Sheet>
-        ))}
+              {isOpen && <span className="ml-2">{integration.name}</span>}
+              {integration.unread && (
+                <Badge
+                  variant="notification"
+                  className="flex items-center justify-center"
+                >
+                  {integration.unread}
+                </Badge>
+              )}
+            </Button>
+          )
+        })}
       </div>
-    </aside>
+    </div>
   )
-} 
+}
