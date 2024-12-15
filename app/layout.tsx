@@ -1,5 +1,6 @@
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
+import { SidebarProvider } from "@/components/ui/sidebar"
 
 export const metadata = {
   title: 'Sunclaude - Task Management',
@@ -20,7 +21,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
