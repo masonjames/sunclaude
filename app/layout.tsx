@@ -1,6 +1,7 @@
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata = {
   title: 'Sunclaude - Task Management',
@@ -24,6 +25,7 @@ export default function RootLayout({
           <SidebarProvider>
             {children}
           </SidebarProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

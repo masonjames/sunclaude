@@ -32,6 +32,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Plus } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
+import { useApi } from "@/hooks/use-api"
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -47,6 +49,8 @@ interface AddTaskDialogProps {
 
 export function AddTaskDialog({ onTaskAdded }: AddTaskDialogProps) {
   const [open, setOpen] = React.useState(false)
+  const { toast } = useToast()
+  const { execute } = useApi()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,24 +62,23 @@ export function AddTaskDialog({ onTaskAdded }: AddTaskDialogProps) {
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      const response = await fetch("/api/tasks", {
+    const success = await execute(
+      fetch("/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(values),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create task")
+      }),
+      {
+        successMessage: "Task created successfully"
       }
+    )
 
+    if (success) {
       form.reset()
       setOpen(false)
       onTaskAdded()
-    } catch (error) {
-      console.error("Error creating task:", error)
     }
   }
 

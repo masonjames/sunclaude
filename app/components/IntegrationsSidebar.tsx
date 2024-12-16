@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Mail, ListTodo, Calendar, FileText, LineChar
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSidebar } from "@/components/ui/sidebar"
+import { useApi } from "@/hooks/use-api"
 import { cn } from "@/lib/utils"
 import { IntegrationPanel } from "./integrations/IntegrationPanel"
 
@@ -31,6 +32,7 @@ interface IntegrationApiResponse {
 
 export const IntegrationsSidebar = () => {
   const { isIntegrationsOpen, setIsIntegrationsOpen } = useSidebar()
+  const { execute } = useApi<IntegrationApiResponse>()
   const [activeIntegration, setActiveIntegration] = React.useState<Integration | null>(null)
   const [integrations, setIntegrations] = React.useState<Record<Integration, IntegrationState>>({
     gmail: { items: [], loading: false },
@@ -46,33 +48,23 @@ export const IntegrationsSidebar = () => {
       [integration]: { ...prev[integration], loading: true, error: undefined }
     }))
 
-    try {
-      const response = await fetch(`/api/integrations/${integration}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch items')
+    const data = await execute(
+      fetch(`/api/integrations/${integration}`),
+      {
+        showSuccessToast: false,
+        showErrorToast: true
       }
+    )
 
-      const data: IntegrationApiResponse = await response.json()
-      setIntegrations(prev => ({
-        ...prev,
-        [integration]: {
-          items: data.items,
-          loading: false,
-          unreadCount: data.items.length
-        }
-      }))
-    } catch (error) {
-      console.error(`Error fetching ${integration} items:`, error)
-      setIntegrations(prev => ({
-        ...prev,
-        [integration]: {
-          ...prev[integration],
-          loading: false,
-          error: 'Failed to fetch items'
-        }
-      }))
-    }
-  }, [])
+    setIntegrations(prev => ({
+      ...prev,
+      [integration]: {
+        items: data?.items || [],
+        loading: false,
+        unreadCount: data?.items.length || 0
+      }
+    }))
+  }, [execute])
 
   React.useEffect(() => {
     if (activeIntegration) {
@@ -81,8 +73,8 @@ export const IntegrationsSidebar = () => {
   }, [activeIntegration, fetchIntegrationItems])
 
   const handleAddToBoard = async (item: IntegrationItem) => {
-    try {
-      const response = await fetch("/api/tasks", {
+    const success = await execute(
+      fetch("/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -96,14 +88,11 @@ export const IntegrationsSidebar = () => {
             ? item.dueDate.split("T")[1].substring(0, 5)
             : undefined,
         }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create task")
+      }),
+      {
+        successMessage: "Task added to board successfully"
       }
-    } catch (error) {
-      console.error("Error creating task:", error)
-    }
+    )
   }
 
   return (
