@@ -1,4 +1,4 @@
-import { type ToastProps } from "@/components/ui/toast"
+import * as React from "react"
 
 export type ErrorResponse = {
   message: string
@@ -29,28 +29,24 @@ export function getErrorMessage(error: unknown): string {
   return String(error)
 }
 
-export function createErrorToast(error: unknown): ToastProps {
+export function createErrorToast(error: unknown) {
   const message = getErrorMessage(error)
-  const toast: ToastProps = {
-    variant: "destructive",
-    title: "Error",
-    description: message,
-  }
+  let description = message
 
   if (isAppError(error)) {
     // Add specific handling for different error codes
     switch (error.code) {
       case 'NETWORK_ERROR':
-        toast.description = 'Unable to connect to the server. Please check your internet connection.'
+        description = 'Unable to connect to the server. Please check your internet connection.'
         break
       case 'VALIDATION_ERROR':
-        toast.description = 'Please check your input and try again.'
+        description = 'Please check your input and try again.'
         break
       case 'UNAUTHORIZED':
-        toast.description = 'Please sign in to continue.'
+        description = 'Please sign in to continue.'
         break
       case 'NOT_FOUND':
-        toast.description = 'The requested resource was not found.'
+        description = 'The requested resource was not found.'
         break
       default:
         // Use the original message if no specific handling
@@ -58,12 +54,14 @@ export function createErrorToast(error: unknown): ToastProps {
     }
   }
 
-  return toast
+  return {
+    variant: "destructive" as const,
+    description,
+  }
 }
 
-export function createSuccessToast(message: string): ToastProps {
+export function createSuccessToast(message: string) {
   return {
-    title: "Success",
     description: message,
   }
 }

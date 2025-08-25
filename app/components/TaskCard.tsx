@@ -16,9 +16,10 @@ interface Task {
 
 interface TaskCardProps {
   task: Task
+  overlay?: boolean
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, overlay }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -56,7 +57,7 @@ export function TaskCard({ task }: TaskCardProps) {
         <div className="flex items-start justify-between">
           <h3 className="font-medium leading-none">{task.title}</h3>
           {task.priority && (
-            <Badge variant={task.priority as "low" | "medium" | "high"}>
+            <Badge variant={task.priority === "high" ? "destructive" : task.priority === "medium" ? "secondary" : "outline"}>
               {task.priority}
             </Badge>
           )}

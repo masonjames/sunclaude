@@ -156,7 +156,7 @@ export const TaskBoard = () => {
 
     if (active.data.current?.type === 'integration') {
       const integrationItem = active.data.current.item
-      const newTask = await execute(
+      const newTask = await execute<Task>(
         fetch('/api/tasks', {
           method: 'POST',
           headers: {
