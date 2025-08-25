@@ -5,14 +5,7 @@ import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  priority?: "low" | "medium" | "high"
-  dueTime?: string
-}
+import { Task } from "@/types/task"
 
 interface TaskCardProps {
   task: Task
@@ -68,6 +61,17 @@ export function TaskCard({ task, overlay }: TaskCardProps) {
         {task.dueTime && (
           <p className="text-xs text-muted-foreground">Due: {task.dueTime}</p>
         )}
+        
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          {task.status && (
+            <Badge variant="outline" className="text-xs">
+              {task.status.replace('_', ' ')}
+            </Badge>
+          )}
+          {task.estimateMinutes && (
+            <span className="text-xs">{task.estimateMinutes}min</span>
+          )}
+        </div>
       </div>
     </div>
   )

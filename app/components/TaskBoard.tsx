@@ -21,15 +21,7 @@ import {
 } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { addDays, subDays, format, parseISO, isEqual } from "date-fns"
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  priority?: "low" | "medium" | "high"
-  dueTime?: string
-  date: string
-}
+import { Task } from "@/types/task"
 
 const DAYS_TO_LOAD = 30 // Number of days to load in each direction
 const COLUMN_WIDTH = 320 // Width of each column in pixels
