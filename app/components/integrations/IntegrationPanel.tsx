@@ -12,7 +12,7 @@ interface IntegrationItem {
   title: string
   description?: string
   dueDate?: string
-  priority?: "low" | "medium" | "high"
+  priority?: "LOW" | "MEDIUM" | "HIGH"
 }
 
 interface IntegrationPanelProps {

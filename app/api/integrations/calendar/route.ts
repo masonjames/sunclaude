@@ -7,7 +7,7 @@ export async function GET() {
     const USE_MOCK_DATA = true // Toggle this based on environment variables or configuration
 
     if (USE_MOCK_DATA) {
-      return NextResponse.json({ items: mockCalendarItems })
+      return NextResponse.json(mockCalendarItems)
     }
 
     // TODO: Get access token from session/auth

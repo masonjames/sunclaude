@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { mockGmailItems } from '@/services/mock-data'
+import { mockCalendarItems } from '@/services/mock-data'
 
 export async function GET() {
   try {
@@ -7,15 +7,15 @@ export async function GET() {
     const USE_MOCK_DATA = true // Toggle this based on environment variables or configuration
 
     if (USE_MOCK_DATA) {
-      return NextResponse.json(mockGmailItems)
+      return NextResponse.json(mockCalendarItems)
     }
 
     // Real implementation would go here
-    throw new Error('Gmail integration not configured')
+    throw new Error('Google Calendar integration not configured')
   } catch (error) {
-    console.error('Error fetching Gmail items:', error)
+    console.error('Error fetching Google Calendar items:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch Gmail items' },
+      { error: 'Failed to fetch Google Calendar items' },
       { status: 500 }
     )
   }
