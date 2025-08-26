@@ -4,6 +4,9 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as HotToaster } from 'react-hot-toast'
 import { AuthProvider } from "@/components/auth-provider"
+import { ToastProvider } from "@/contexts/ToastContext"
+import { ToastContainer } from "@/components/ui/toast"
+import { TaskStoreProvider } from "@/components/providers/TaskStoreProvider"
 
 export const metadata = {
   title: 'Sunclaude - Task Management',
@@ -41,22 +44,27 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SidebarProvider>
-              {children}
-            </SidebarProvider>
-            <Toaster />
-            <HotToaster 
-              position="bottom-right"
-              toastOptions={{
-                className: '',
-                duration: 4000,
-                style: {
-                  background: 'hsl(var(--background))',
-                  color: 'hsl(var(--foreground))',
-                  border: '1px solid hsl(var(--border))',
-                },
-              }}
-            />
+            <ToastProvider>
+              <TaskStoreProvider>
+                <SidebarProvider>
+                  {children}
+                </SidebarProvider>
+              </TaskStoreProvider>
+              <Toaster />
+              <HotToaster 
+                position="bottom-right"
+                toastOptions={{
+                  className: '',
+                  duration: 4000,
+                  style: {
+                    background: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))',
+                    border: '1px solid hsl(var(--border))',
+                  },
+                }}
+              />
+              <ToastContainer />
+            </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

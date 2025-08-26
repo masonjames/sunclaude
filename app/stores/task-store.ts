@@ -1,8 +1,55 @@
 import { create } from 'zustand'
-import { subscribeWithSelector } from 'zustand/middleware'
+import { subscribeWithSelector, persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import { Task, TaskStatus, TaskPriority } from '@/types/task'
 import { addDays, subDays, format, parseISO } from 'date-fns'
+
+// Toast notification interface (to be used when Toast context is available)
+interface ToastNotification {
+  success: (title: string, description?: string) => void
+  error: (title: string, description?: string) => void
+  warning: (title: string, description?: string) => void
+  info: (title: string, description?: string) => void
+}
+
+// Global toast instance (will be set by provider)
+let globalToast: ToastNotification | null = null
+
+export function setGlobalToast(toast: ToastNotification) {
+  globalToast = toast
+}
+
+// Retry mechanism helpers
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  let lastError: Error
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error')
+      
+      if (attempt === maxRetries) {
+        globalToast?.error('Operation failed', `Failed after ${maxRetries} attempts: ${lastError.message}`)
+        throw lastError
+      }
+      
+      // Exponential backoff
+      const backoffDelay = delay * Math.pow(2, attempt - 1)
+      await new Promise(resolve => setTimeout(resolve, backoffDelay))
+      
+      if (attempt > 1) {
+        globalToast?.info('Retrying...', `Attempt ${attempt} of ${maxRetries}`)
+      }
+    }
+  }
+  
+  throw lastError!
+}
 
 interface TaskFilters {
   status?: TaskStatus[]
@@ -74,8 +121,9 @@ const createOptimisticTask = (
 })
 
 export const useTaskStore = create<TaskStore>()(
-  subscribeWithSelector(
-    immer((set, get) => ({
+  persist(
+    subscribeWithSelector(
+      immer((set, get) => ({
       // Initial State
       tasks: [],
       loading: false,
@@ -133,22 +181,26 @@ export const useTaskStore = create<TaskStore>()(
         })
 
         try {
-          const response = await fetch('/api/tasks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: taskData.title,
-              description: taskData.description,
-              priority: taskData.priority,
-              status: taskData.status,
-              date: taskData.date,
-              dueTime: taskData.dueTime,
-              sortOrder: taskData.sortOrder,
-            }),
-          })
+          const serverTask = await withRetry(async () => {
+            const response = await fetch('/api/tasks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: taskData.title,
+                description: taskData.description,
+                priority: taskData.priority,
+                status: taskData.status,
+                plannedDate: taskData.date,
+                scheduledStart: taskData.scheduledStart,
+                scheduledEnd: taskData.scheduledEnd,
+                estimateMinutes: taskData.estimateMinutes,
+                sortOrder: taskData.sortOrder,
+              }),
+            })
 
-          if (!response.ok) throw new Error('Failed to create task')
-          const serverTask = await response.json()
+            if (!response.ok) throw new Error(`Failed to create task: ${response.status}`)
+            return await response.json()
+          })
 
           // Replace optimistic task with server task
           set((state) => {
@@ -159,6 +211,7 @@ export const useTaskStore = create<TaskStore>()(
             state.optimisticOperations.delete(opId)
           })
 
+          globalToast?.success('Task created', `"${taskData.title}" has been added to your tasks`)
           return serverTask
         } catch (error) {
           // Revert optimistic update
@@ -186,14 +239,16 @@ export const useTaskStore = create<TaskStore>()(
         })
 
         try {
-          const response = await fetch(`/api/tasks/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updates),
-          })
+          const serverTask = await withRetry(async () => {
+            const response = await fetch('/api/tasks', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id, ...updates }),
+            })
 
-          if (!response.ok) throw new Error('Failed to update task')
-          const serverTask = await response.json()
+            if (!response.ok) throw new Error(`Failed to update task: ${response.status}`)
+            return await response.json()
+          })
 
           // Update with server response
           set((state) => {
@@ -204,6 +259,7 @@ export const useTaskStore = create<TaskStore>()(
             state.optimisticOperations.delete(opId)
           })
 
+          globalToast?.success('Task updated', `"${originalTask.title}" has been updated`)
           return serverTask
         } catch (error) {
           // Revert optimistic update
@@ -231,15 +287,19 @@ export const useTaskStore = create<TaskStore>()(
         })
 
         try {
-          const response = await fetch(`/api/tasks/${id}`, {
-            method: 'DELETE',
-          })
+          await withRetry(async () => {
+            const response = await fetch(`/api/tasks?id=${id}`, {
+              method: 'DELETE',
+            })
 
-          if (!response.ok) throw new Error('Failed to delete task')
+            if (!response.ok) throw new Error(`Failed to delete task: ${response.status}`)
+          })
 
           set((state) => {
             state.optimisticOperations.delete(opId)
           })
+
+          globalToast?.success('Task deleted', `"${originalTask.title}" has been removed`)
         } catch (error) {
           // Revert optimistic update
           set((state) => {
@@ -277,21 +337,26 @@ export const useTaskStore = create<TaskStore>()(
         })
 
         try {
-          const response = await fetch('/api/tasks/reorder', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              taskIds,
-              date: targetDate,
-              status: targetStatus,
-            }),
-          })
+          await withRetry(async () => {
+            const response = await fetch('/api/tasks/reorder', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                taskIds,
+                date: targetDate,
+                status: targetStatus,
+              }),
+            })
 
-          if (!response.ok) throw new Error('Failed to reorder tasks')
+            if (!response.ok) throw new Error(`Failed to reorder tasks: ${response.status}`)
+          })
 
           set((state) => {
             state.optimisticOperations.delete(opId)
           })
+
+          const taskCount = taskIds.length
+          globalToast?.success('Tasks reordered', `${taskCount} task${taskCount > 1 ? 's' : ''} moved to ${targetStatus}`)
         } catch (error) {
           // Revert optimistic update
           set((state) => {
@@ -433,6 +498,18 @@ export const useTaskStore = create<TaskStore>()(
         Object.assign(state, data)
       }),
     }))
+    ),
+    {
+      name: 'task-store',
+      // Only persist essential state, not transient data
+      partialize: (state) => ({
+        tasks: state.tasks,
+        filters: state.filters,
+        visibleDateRange: state.visibleDateRange,
+        lastSync: state.lastSync,
+        // Don't persist: loading, error, optimisticOperations, _taskStats
+      }),
+    }
   )
 )
 
