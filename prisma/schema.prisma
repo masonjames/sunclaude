@@ -134,6 +134,7 @@ model DailyPlan {
   startedAt       DateTime? @map("started_at")
   completedAt     DateTime? @map("completed_at")
   notes           String?
+  summary         String?
   createdAt       DateTime  @default(now()) @map("created_at")
 
   @@unique([userId, date])
@@ -215,6 +216,8 @@ model UserSettings {
   dailyShutdownHour           Int     @default(17) @map("daily_shutdown_hour")
   autoSyncCalendar            Boolean @default(false) @map("auto_sync_calendar")
   autoCreateCalendarEvents    Boolean @default(false) @map("auto_create_calendar_events")
+  autoRollover                Boolean @default(true) @map("auto_rollover")
+  slackWebhookUrl             String? @map("slack_webhook_url")
 
   @@map("user_settings")
 }

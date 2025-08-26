@@ -4,15 +4,20 @@ import * as React from "react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Play, Pause, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Task } from "@/types/task"
+import { useToast } from "@/hooks/use-toast"
 
 interface TaskCardProps {
-  task: Task
+  task: Task & { hasActiveTimer?: boolean }
   overlay?: boolean
+  onTimerToggle?: () => void
 }
 
-export function TaskCard({ task, overlay }: TaskCardProps) {
+export function TaskCard({ task, overlay, onTimerToggle }: TaskCardProps) {
+  const { toast } = useToast()
   const {
     attributes,
     listeners,
@@ -33,6 +38,45 @@ export function TaskCard({ task, overlay }: TaskCardProps) {
     transition,
   }
 
+  const handleTimerToggle = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    try {
+      if (task.hasActiveTimer) {
+        const response = await fetch(`/api/tasks/${task.id}/timer/stop`, {
+          method: 'POST',
+        })
+        
+        if (response.ok) {
+          toast({
+            title: "Timer stopped",
+            description: `Timer stopped for "${task.title}"`,
+          })
+        }
+      } else {
+        const response = await fetch(`/api/tasks/${task.id}/timer/start`, {
+          method: 'POST',
+        })
+        
+        if (response.ok) {
+          toast({
+            title: "Timer started",
+            description: `Timer started for "${task.title}"`,
+          })
+        }
+      }
+      
+      onTimerToggle?.()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to toggle timer",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -43,7 +87,8 @@ export function TaskCard({ task, overlay }: TaskCardProps) {
         "group relative rounded-lg border p-4 shadow-sm transition-all",
         isDragging && "z-50 scale-105 shadow-lg",
         "hover:border-foreground/20 dark:hover:border-foreground/30",
-        "cursor-grab active:cursor-grabbing"
+        "cursor-grab active:cursor-grabbing",
+        task.hasActiveTimer && "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
       )}
     >
       <div className="space-y-2">
@@ -63,14 +108,45 @@ export function TaskCard({ task, overlay }: TaskCardProps) {
         )}
         
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          {task.status && (
-            <Badge variant="outline" className="text-xs">
-              {task.status.replace('_', ' ')}
-            </Badge>
-          )}
-          {task.estimateMinutes && (
-            <span className="text-xs">{task.estimateMinutes}min</span>
-          )}
+          <div className="flex items-center gap-2">
+            {task.status && (
+              <Badge variant="outline" className="text-xs">
+                {task.status.replace('_', ' ')}
+              </Badge>
+            )}
+            {task.hasActiveTimer && (
+              <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                <Clock className="h-3 w-3 animate-pulse" />
+                <span className="text-xs font-medium">Active</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {(task.estimateMinutes || task.actualMinutes) && (
+              <div className="flex items-center gap-1 text-xs">
+                {task.actualMinutes ? (
+                  <span>{task.actualMinutes}m</span>
+                ) : null}
+                {task.estimateMinutes && (
+                  <span className="text-muted-foreground">/{task.estimateMinutes}m</span>
+                )}
+              </div>
+            )}
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 hover:bg-transparent"
+              onClick={handleTimerToggle}
+            >
+              {task.hasActiveTimer ? (
+                <Pause className="h-3 w-3 text-blue-600" />
+              ) : (
+                <Play className="h-3 w-3 text-green-600" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

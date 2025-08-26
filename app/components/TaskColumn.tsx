@@ -19,9 +19,10 @@ interface TaskColumnProps {
   date: Date
   tasks: Task[]
   isToday?: boolean
+  onTimerToggle?: () => void
 }
 
-export function TaskColumn({ date, tasks, isToday }: TaskColumnProps) {
+export function TaskColumn({ date, tasks, isToday, onTimerToggle }: TaskColumnProps) {
   const dateStr = format(date, 'yyyy-MM-dd')
   const { setNodeRef } = useDroppable({
     id: dateStr,
@@ -62,6 +63,7 @@ export function TaskColumn({ date, tasks, isToday }: TaskColumnProps) {
           <TaskCard
             key={task.id}
             task={task}
+            onTimerToggle={onTimerToggle}
           />
         ))}
       </div>

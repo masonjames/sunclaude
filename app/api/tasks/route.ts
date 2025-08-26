@@ -29,13 +29,20 @@ export async function GET(request: NextRequest) {
     const tasks = await prisma.task.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
+      include: {
+        timeEntries: {
+          where: { endedAt: null },
+          take: 1,
+        },
+      },
     })
     
-    // Transform tasks to include legacy date field for backward compatibility
+    // Transform tasks to include legacy date field for backward compatibility and timer status
     const transformedTasks = tasks.map(task => ({
       ...task,
       date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
       plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      hasActiveTimer: task.timeEntries.length > 0,
     }))
     
     return NextResponse.json(transformedTasks)

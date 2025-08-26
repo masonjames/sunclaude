@@ -232,6 +232,11 @@ export const TaskBoard = () => {
     fetchTasks(visibleDateRange.start, visibleDateRange.end)
   }, [fetchTasks, visibleDateRange])
 
+  const handleTimerToggle = React.useCallback(() => {
+    // Refresh tasks to update timer status
+    fetchTasks(visibleDateRange.start, visibleDateRange.end)
+  }, [fetchTasks, visibleDateRange])
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -280,6 +285,7 @@ export const TaskBoard = () => {
                     date={date}
                     tasks={dayTasks}
                     isToday={isToday}
+                    onTimerToggle={handleTimerToggle}
                   />
                 )
               })}
