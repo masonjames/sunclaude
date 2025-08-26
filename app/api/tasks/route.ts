@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/db'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const { searchParams } = new URL(request.url)
     const start = searchParams.get('start')
     const end = searchParams.get('end')
     
-    const whereClause: any = {}
+    const whereClause: any = {
+      userId: session.user.id, // Scope tasks to authenticated user
+    }
     
     // Add date range filtering if provided
     if (start || end) {
@@ -30,6 +40,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const json = await request.json()
     
     // Validate required fields
@@ -39,6 +55,7 @@ export async function POST(request: Request) {
     
     const task = await prisma.task.create({
       data: {
+        userId: session.user.id, // Associate with authenticated user
         title: json.title,
         description: json.description || null,
         priority: json.priority || null,
@@ -55,11 +72,29 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const json = await request.json()
     const { id, ...data } = json
     
     if (!id) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 })
+    }
+    
+    // Verify task ownership before updating
+    const existingTask = await prisma.task.findFirst({
+      where: { 
+        id,
+        userId: session.user.id // Ensure user owns the task
+      }
+    })
+    
+    if (!existingTask) {
+      return NextResponse.json({ error: 'Task not found or access denied' }, { status: 404 })
     }
     
     // Filter out undefined values and only update provided fields
@@ -77,9 +112,6 @@ export async function PUT(request: Request) {
     return NextResponse.json(task)
   } catch (error) {
     console.error('Error updating task:', error)
-    if (error instanceof Error && error.message.includes('Record to update not found')) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
-    }
     return NextResponse.json({ error: 'Error updating task' }, { status: 500 })
   }
 }
