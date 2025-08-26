@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { getAsanaItems } from '@/app/services/asana'
+import { getAsanaItems } from '@/services/asana'
 import { prisma } from '@/lib/db'
 import { mockAsanaItems } from '@/services/mock-data'
 

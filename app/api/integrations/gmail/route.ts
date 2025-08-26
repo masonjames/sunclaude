@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { getGmailItems } from '@/app/services/gmail'
+import { getGmailItems } from '@/services/gmail'
 import { prisma } from '@/lib/db'
 import { mockGmailItems } from '@/services/mock-data'
 

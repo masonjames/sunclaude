@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { getNotionItems } from '@/app/services/notion'
+import { getNotionItems } from '@/services/notion'
 import { prisma } from '@/lib/db'
 import { mockNotionItems } from '@/services/mock-data'
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/db'
 import { authOptions } from '@/lib/auth'
-import { enqueueCalendarUpdate, enqueueCalendarDelete } from '@/app/services/sync-engine'
+import { enqueueCalendarUpdate, enqueueCalendarDelete } from '@/services/sync-engine'
 
 export async function GET(request: NextRequest) {
   try {
