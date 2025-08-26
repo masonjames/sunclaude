@@ -151,7 +151,7 @@ export const useTaskStore = create<TaskStore>()(
       updateTask: (id, updates) => set((state) => {
         const index = state.tasks.findIndex(t => t.id === id)
         if (index !== -1) {
-          state.tasks[index] = { ...state.tasks[index], ...updates,  }
+          state.tasks[index] = { ...state.tasks[index], ...updates }
           state._taskStats = null // Clear cache
         }
       }),
@@ -233,7 +233,7 @@ export const useTaskStore = create<TaskStore>()(
         set((state) => {
           const index = state.tasks.findIndex(t => t.id === id)
           if (index !== -1) {
-            state.tasks[index] = { ...state.tasks[index], ...updates,  }
+            state.tasks[index] = { ...state.tasks[index], ...updates }
           }
           state.optimisticOperations.add(opId)
         })
@@ -328,7 +328,6 @@ export const useTaskStore = create<TaskStore>()(
                 date: targetDate,
                 status: targetStatus,
                 sortOrder: index,
-                
               }
             }
           })
