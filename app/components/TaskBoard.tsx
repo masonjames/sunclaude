@@ -25,7 +25,7 @@ import { addDays, subDays, format, parseISO, isEqual } from "date-fns"
 import { Task } from "@/types/task"
 
 const DAYS_TO_LOAD = 30 // Number of days to load in each direction
-const COLUMN_WIDTH = 320 // Width of each column in pixels
+const COLUMN_WIDTH = 360 // Width of each column in pixels (increased for lanes)
 
 export const TaskBoard = () => {
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -177,14 +177,41 @@ export const TaskBoard = () => {
       }
     } else {
       const activeTask = tasks.find(task => task.id === active.id)
+      if (!activeTask) return
 
-      if (activeTask && activeTask.date !== overDate) {
+      // Parse the drop target - could be date (old format) or date__status (new lane format)
+      let targetDate: string
+      let targetStatus: string
+      
+      if (overDate.includes('__')) {
+        // New lane format: "2024-01-15__PLANNED"
+        const [date, status] = overDate.split('__')
+        targetDate = date
+        targetStatus = status
+      } else {
+        // Old date format: "2024-01-15" 
+        targetDate = overDate
+        targetStatus = 'PLANNED' // Default status when dropping on date
+      }
+
+      // Only update if something changed
+      const dateChanged = activeTask.date !== targetDate
+      const statusChanged = activeTask.status !== targetStatus
+      
+      if (dateChanged || statusChanged) {
+        // Optimistic update
         setTasks(prev => prev.map(task =>
           task.id === activeTask.id
-            ? { ...task, date: overDate, plannedDate: overDate, status: 'PLANNED' as any }
+            ? { 
+                ...task, 
+                date: targetDate, 
+                plannedDate: targetDate,
+                status: targetStatus as any
+              }
             : task
         ))
 
+        // Server update
         const success = await execute(
           fetch('/api/tasks', {
             method: 'PUT',
@@ -193,20 +220,25 @@ export const TaskBoard = () => {
             },
             body: JSON.stringify({
               id: activeTask.id,
-              date: overDate,
-              plannedDate: overDate,
-              status: 'PLANNED',
+              date: targetDate,
+              plannedDate: targetDate,
+              status: targetStatus,
             }),
           }),
           {
-            successMessage: 'Task moved successfully'
+            successMessage: `Task moved to ${targetStatus.toLowerCase()}`
           }
         )
 
+        // Rollback on failure
         if (!success) {
           setTasks(prev => prev.map(task =>
             task.id === activeTask.id
-              ? { ...task, date: activeTask.date }
+              ? { 
+                  ...task, 
+                  date: activeTask.date,
+                  status: activeTask.status
+                }
               : task
           ))
         }

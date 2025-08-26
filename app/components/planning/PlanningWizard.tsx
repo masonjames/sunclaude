@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { usePlanningStore } from '@/hooks/use-planning';
 import { StepPickCandidates } from './steps/StepPickCandidates';
@@ -162,42 +163,60 @@ export function PlanningWizard({
           </DialogTitle>
         </DialogHeader>
         
-        {/* Progress indicator */}
-        <div className="flex items-center justify-between mb-6">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className="flex items-center flex-1"
-            >
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
-                  ${index <= currentStepIndex 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground'
-                  }`}
-              >
-                {index + 1}
-              </div>
-              <span
-                className={`ml-2 text-sm font-medium
-                  ${index === currentStepIndex 
-                    ? 'text-foreground' 
-                    : 'text-muted-foreground'
-                  }`}
-              >
-                {step.label}
-              </span>
-              {index < steps.length - 1 && (
-                <div
-                  className={`flex-1 h-0.5 mx-4
-                    ${index < currentStepIndex 
-                      ? 'bg-primary' 
-                      : 'bg-muted'
-                    }`}
-                />
-              )}
+        {/* Enhanced Progress indicator */}
+        <div className="mb-6 space-y-4">
+          {/* Progress bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Step {currentStepIndex + 1} of {steps.length}</span>
+              <span className="text-muted-foreground">{Math.round(((currentStepIndex + 1) / steps.length) * 100)}% complete</span>
             </div>
-          ))}
+            <Progress value={((currentStepIndex + 1) / steps.length) * 100} className="h-2" />
+          </div>
+          
+          {/* Step indicators */}
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => (
+              <div
+                key={step.id}
+                className="flex items-center flex-1"
+              >
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium border-2 transition-all duration-200
+                      ${index < currentStepIndex 
+                        ? 'bg-primary border-primary text-primary-foreground' 
+                        : index === currentStepIndex
+                        ? 'bg-primary border-primary text-primary-foreground ring-4 ring-primary/20'
+                        : 'bg-background border-muted-foreground/20 text-muted-foreground hover:border-muted-foreground/40'
+                      }`}
+                  >
+                    {index < currentStepIndex ? '✓' : index + 1}
+                  </div>
+                  <span
+                    className={`mt-2 text-xs font-medium text-center max-w-[80px] leading-tight
+                      ${index === currentStepIndex 
+                        ? 'text-foreground' 
+                        : index < currentStepIndex
+                        ? 'text-primary'
+                        : 'text-muted-foreground'
+                      }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`flex-1 h-0.5 mx-2 mt-[-20px] transition-all duration-200
+                      ${index < currentStepIndex 
+                        ? 'bg-primary' 
+                        : 'bg-muted'
+                      }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
         
         {/* Step content */}
@@ -211,27 +230,45 @@ export function PlanningWizard({
           )}
         </div>
         
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={currentStepIndex === 0 || loading || committing}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          
-          <div className="text-sm text-muted-foreground">
-            {selectedCount > 0 && `${selectedCount} tasks selected`}
+        {/* Enhanced Navigation */}
+        <div className="flex items-center justify-between pt-6 border-t bg-muted/20 -mx-6 px-6 -mb-6 pb-6 mt-6">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={currentStepIndex === 0 || loading || committing}
+              className="transition-all duration-200"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            
+            {selectedCount > 0 && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full">
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+                {selectedCount} task{selectedCount === 1 ? '' : 's'} selected
+              </div>
+            )}
           </div>
           
           <Button
             onClick={handleNext}
             disabled={!canProceed || loading || committing}
+            className={`transition-all duration-200 min-w-[120px] ${
+              currentStepIndex === steps.length - 1 
+                ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' 
+                : ''
+            }`}
           >
             {currentStepIndex === steps.length - 1 ? (
-              committing ? 'Committing...' : 'Commit Plan'
+              committing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Committing...
+                </>
+              ) : (
+                'Commit Plan'
+              )
             ) : (
               <>
                 Next
