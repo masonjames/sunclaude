@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Github, Mail, MessageCircle, FileText, RefreshCw } from 'lucide-react'
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/contexts/ToastContext"
 
 interface IntegrationStatus {
   google: {
@@ -27,7 +27,7 @@ interface IntegrationStatus {
 
 export default function SettingsPage() {
   const { data: session } = useSession()
-  const { toast } = useToast()
+  const { success, error: showError } = useToast()
   const [status, setStatus] = useState<IntegrationStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState<string | null>(null)
@@ -44,11 +44,7 @@ export default function SettingsPage() {
       const data = await response.json()
       setStatus(data.integrationStatus)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch integration status",
-        variant: "destructive",
-      })
+      showError("Error", "Failed to fetch integration status")
     } finally {
       setLoading(false)
     }
@@ -73,18 +69,11 @@ export default function SettingsPage() {
         
         const result = await response.json()
         if (result.success) {
-          toast({
-            title: "Calendar Synced",
-            description: `Synced ${result.syncedTasks} tasks from calendar`,
-          })
+          success("Calendar Synced", `Synced ${result.syncedTasks} tasks from calendar`)
         }
       }
     } catch (error) {
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync with the integration",
-        variant: "destructive",
-      })
+      showError("Sync Failed", "Failed to sync with the integration")
     } finally {
       setSyncing(null)
     }

@@ -71,6 +71,12 @@ function StatusLane({ status, tasks, dateStr, onTimerToggle }: {
 }
 
 export function TaskColumn({ date, tasks, isToday, onTimerToggle }: TaskColumnProps) {
+  // Guard against invalid dates
+  if (!date || isNaN(date.getTime())) {
+    console.warn('TaskColumn received invalid date:', date)
+    return null
+  }
+  
   const dateStr = format(date, 'yyyy-MM-dd')
   
   // Column-level droppable as fallback

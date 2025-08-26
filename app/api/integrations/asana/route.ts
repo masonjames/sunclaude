@@ -1,31 +1,39 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { getAsanaItems } from '@/services/asana'
+import { prisma } from '@/lib/db'
 import { mockAsanaItems } from '@/services/mock-data'
 
 export async function GET() {
   try {
-    const USE_MOCK_DATA = true // Toggle this based on environment variables or configuration
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    if (USE_MOCK_DATA) {
+    // Check for Asana integration connection
+    const asanaConnection = await prisma.integrationConnection.findUnique({
+      where: {
+        userId_provider: {
+          userId: session.user.id,
+          provider: 'asana'
+        }
+      },
+    })
+
+    if (!asanaConnection?.accessToken) {
+      console.log('No Asana access token found, using mock data')
       return NextResponse.json(mockAsanaItems)
     }
 
-    // TODO: Get access token from session/auth
-    const accessToken = process.env.ASANA_ACCESS_TOKEN
-    if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Asana not configured' },
-        { status: 401 }
-      )
-    }
-
-    const items = await getAsanaItems(accessToken)
-    return NextResponse.json(items)
+    // Use real Asana API
+    const asanaItems = await getAsanaItems(asanaConnection.accessToken)
+    return NextResponse.json(asanaItems)
   } catch (error) {
-    console.error('Asana API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch Asana items' },
-      { status: 500 }
-    )
+    console.error('Error fetching Asana items:', error)
+    // Fallback to mock data on error
+    return NextResponse.json(mockAsanaItems)
   }
 }

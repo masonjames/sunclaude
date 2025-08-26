@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 // NextAuth.js Models
@@ -183,6 +183,7 @@ model CalendarEvent {
   sequence     Int?
   lastSyncedAt DateTime? @map("last_synced_at")
   createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@index([provider, calendarId, eventId])
   @@index([userId, provider])
@@ -199,10 +200,13 @@ model GoogleSyncState {
   calendarId  String    @map("calendar_id")
   expiration  DateTime
   syncToken   String?   @map("sync_token")
+  lastSyncAt  DateTime? @map("last_sync_at")
   createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@unique([channelId])
   @@index([userId, calendarId])
+  @@index([resourceId])
   @@map("google_sync_state")
 }
 

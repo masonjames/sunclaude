@@ -32,7 +32,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Plus } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/contexts/ToastContext"
 import { useApi } from "@/hooks/use-api"
 
 const formSchema = z.object({
@@ -49,7 +49,7 @@ interface AddTaskDialogProps {
 
 export function AddTaskDialog({ onTaskAdded }: AddTaskDialogProps) {
   const [open, setOpen] = React.useState(false)
-  const { toast } = useToast()
+  const { success, error } = useToast()
   const { execute } = useApi()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useToastFeedback } from "@/hooks/use-toast-feedback"
+import { CalendarSkeleton } from "@/components/ui/skeleton"
 import { useTaskStore } from "@/stores/task-store"
 import { Task } from "@/types/task"
 import { format, addMinutes, parseISO } from "date-fns"
@@ -257,17 +258,22 @@ export function CalendarIntegration({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          <h3 className="text-lg font-semibold">Calendar Integration</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between pb-2 border-b border-gray-100/60 dark:border-gray-800/60">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-blue-100/50 dark:bg-blue-950/30 border border-blue-200/30 dark:border-blue-800/30">
+            <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Calendar Integration</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Schedule events and block focus time</p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <Dialog open={createEventOpen} onOpenChange={setCreateEventOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm" variant="outline" className="gap-2 hover:shadow-sm transition-all duration-200">
+                <Plus className="h-4 w-4" />
                 Event
               </Button>
             </DialogTrigger>
@@ -343,8 +349,8 @@ export function CalendarIntegration({
 
           <Dialog open={timeBlockOpen} onOpenChange={setTimeBlockOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
-                <Clock className="h-4 w-4 mr-2" />
+              <Button size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
+                <Clock className="h-4 w-4" />
                 Block Time
               </Button>
             </DialogTrigger>
@@ -398,33 +404,49 @@ export function CalendarIntegration({
       </div>
 
       {/* Calendar Events List */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-6 w-6 animate-pulse mx-auto mb-2" />
-            Loading calendar events...
-          </div>
+          <CalendarSkeleton variant="shimmer" />
         ) : events.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Calendar className="h-6 w-6 mx-auto mb-2" />
-            No events found for this date
+          <div className="text-center py-12 px-6">
+            <div className="mx-auto w-16 h-16 bg-gray-100/80 dark:bg-gray-800/80 rounded-2xl flex items-center justify-center mb-4 border border-gray-200/50 dark:border-gray-700/50">
+              <Calendar className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No events scheduled</h4>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Create an event or block focus time to get started</p>
+            <div className="flex gap-2 justify-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCreateEventOpen(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Event
+              </Button>
+            </div>
           </div>
         ) : (
           events.map((event) => (
-            <Card key={event.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base font-medium truncate">
+            <Card 
+              key={event.id} 
+              className="group border-2 border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm hover:border-gray-300/60 dark:hover:border-gray-700/60 hover:shadow-lg hover:bg-white/90 dark:hover:bg-gray-950/90 transition-all duration-300 ease-out hover:scale-[1.01]"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 leading-tight tracking-tight">
                       {event.title}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2 text-sm">
-                      <Clock className="h-3 w-3" />
-                      {formatEventTime(event.start, event.end, event.isAllDay)}
+                    <CardDescription className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-gray-800/80 px-2.5 py-1 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formatEventTime(event.start, event.end, event.isAllDay)}
+                      </div>
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getEventStatusColor(event.status)}>
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <Badge className={cn(getEventStatusColor(event.status), "text-xs font-semibold px-2.5 py-1 border")}>
                       {event.status}
                     </Badge>
                     <Button
@@ -432,43 +454,47 @@ export function CalendarIntegration({
                       variant="ghost"
                       onClick={() => handleEventToTask(event)}
                       title="Convert to task"
+                      className="h-8 w-8 p-0 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              {(event.description || event.location || event.attendees?.length) && (
-                <CardContent className="pt-0">
-                  <div className="space-y-2 text-sm">
+              {(event.description || event.location || event.attendees?.length || event.meetingUrl) && (
+                <CardContent className="pt-0 border-t border-gray-100/50 dark:border-gray-800/50">
+                  <div className="space-y-3 text-sm">
                     {event.description && (
-                      <p className="text-muted-foreground line-clamp-2">
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-2">
                         {event.description}
                       </p>
                     )}
-                    {event.location && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {event.location}
-                      </div>
-                    )}
-                    {event.attendees && event.attendees.length > 0 && (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Users className="h-3 w-3" />
-                        {event.attendees.length} attendee{event.attendees.length > 1 ? 's' : ''}
-                      </div>
-                    )}
-                    {event.meetingUrl && (
-                      <a
-                        href={event.meetingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 dark:text-blue-400"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Join Meeting
-                      </a>
-                    )}
+                    
+                    <div className="flex flex-wrap gap-3">
+                      {event.location && (
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/50 px-2.5 py-1.5 rounded-lg border border-gray-200/40 dark:border-gray-700/40">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="font-medium">{event.location}</span>
+                        </div>
+                      )}
+                      {event.attendees && event.attendees.length > 0 && (
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-50/80 dark:bg-gray-900/50 px-2.5 py-1.5 rounded-lg border border-gray-200/40 dark:border-gray-700/40">
+                          <Users className="h-3.5 w-3.5" />
+                          <span className="font-medium">{event.attendees.length} attendee{event.attendees.length > 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {event.meetingUrl && (
+                        <a
+                          href={event.meetingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/30 px-2.5 py-1.5 rounded-lg border border-blue-200/40 dark:border-blue-800/40 hover:bg-blue-100/80 dark:hover:bg-blue-900/40 transition-colors duration-200 font-medium"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Join Meeting
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               )}

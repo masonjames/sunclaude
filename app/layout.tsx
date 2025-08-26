@@ -1,16 +1,16 @@
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
-import { Toaster } from "@/components/ui/toaster"
-import { Toaster as HotToaster } from 'react-hot-toast'
 import { AuthProvider } from "@/components/auth-provider"
+import { ToastProvider } from "@/contexts/ToastContext"
+import { ToastContainer } from "@/components/ui/notification"
+import { TaskStoreProvider } from "@/components/providers/TaskStoreProvider"
+import { KeyboardShortcutsProvider } from "@/components/providers/KeyboardShortcutsProvider"
 
 export const metadata = {
   title: 'Sunclaude - Task Management',
   description: 'A modern task management application with focus modes and integrations',
   manifest: '/manifest.json',
-  themeColor: '#3b82f6',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -24,6 +24,15 @@ export const metadata = {
     'msapplication-TileColor': '#3b82f6',
     'msapplication-config': '/browserconfig.xml'
   }
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#3b82f6'
 }
 
 export default function RootLayout({
@@ -41,22 +50,16 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <SidebarProvider>
-              {children}
-            </SidebarProvider>
-            <Toaster />
-            <HotToaster 
-              position="bottom-right"
-              toastOptions={{
-                className: '',
-                duration: 4000,
-                style: {
-                  background: 'hsl(var(--background))',
-                  color: 'hsl(var(--foreground))',
-                  border: '1px solid hsl(var(--border))',
-                },
-              }}
-            />
+            <ToastProvider>
+              <TaskStoreProvider>
+                <KeyboardShortcutsProvider>
+                  <SidebarProvider>
+                    {children}
+                  </SidebarProvider>
+                </KeyboardShortcutsProvider>
+              </TaskStoreProvider>
+              <ToastContainer />
+            </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

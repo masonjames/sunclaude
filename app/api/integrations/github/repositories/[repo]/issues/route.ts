@@ -136,7 +136,8 @@ const generateMockIssues = (repoName: string) => [
   }
 ]
 
-export async function GET(request: NextRequest, { params }: { params: { repo: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ repo: string }> }) {
+  const { repo } = await params
   try {
     const session = await getServerSession(authOptions)
     
@@ -144,7 +145,6 @@ export async function GET(request: NextRequest, { params }: { params: { repo: st
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { repo } = params
     const decodedRepo = decodeURIComponent(repo)
     const { searchParams } = new URL(request.url)
     

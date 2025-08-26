@@ -4,24 +4,40 @@ A modern task management application built with Next.js, featuring focus modes a
 
 ## Features
 
-- Light/Dark mode with system preference support
-- Responsive design with collapsible sidebars
-- Integration support for:
-  - Gmail
-  - Asana
-  - Notion
-  - Linear
-- Focus mode for distraction-free work
-- Daily and weekly task views
-- Notification system for updates across integrations
+### ✅ Production Ready
+- **Kanban Board**: Full drag-and-drop task management with persistent ordering
+- **Authentication**: Google OAuth integration with NextAuth
+- **Light/Dark Mode**: System preference support with next-themes
+- **Google Calendar**: One-way import and event creation from tasks
+- **Task Management**: CRUD operations with status tracking (Planned → Scheduled → In Progress → Done)
+
+### 🚧 Beta Features (Feature Flagged)
+- **Calendar Bi-directional Sync**: Task updates don't propagate back to calendar yet
+- **GitHub Integration**: OAuth configured, real API integration with @octokit/rest (behind flag)
+
+### 📋 Planned Integrations
+- Gmail (framework in place)
+- Asana (framework in place)  
+- Notion (framework in place)
+- Linear (framework in place)
+
+### 🎯 Roadmap
+- Mobile-responsive layouts
+- PWA features (offline support, push notifications)
+- Performance optimizations (virtualization, caching)
+- Real-time collaboration
 
 ## Tech Stack
 
-- **Framework**: Next.js 14
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI
-- **Theme**: next-themes
+- **Framework**: Next.js 15 with App Router
+- **Database**: Prisma ORM with SQLite (dev) / PostgreSQL (production)
+- **Authentication**: NextAuth with Google/GitHub OAuth
+- **Drag & Drop**: @dnd-kit for kanban functionality
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **UI Components**: Radix UI primitives
+- **Theme**: next-themes for dark/light mode
 - **Icons**: Lucide Icons
+- **Integrations**: googleapis, @octokit/rest, @notionhq/client, asana, @linear/sdk
 
 ## Getting Started
 
@@ -41,14 +57,15 @@ A modern task management application built with Next.js, featuring focus modes a
    cp .env.local.example .env.local
    ```
    
-   Then edit `.env.local` and add your Google OAuth credentials:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing
-   - Enable Google+ API
-   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
-   - Set authorized origins: `http://localhost:3000`
-   - Set authorized redirect URIs: `http://localhost:3000/api/auth/callback/google`
-   - Copy Client ID and Client Secret to your `.env.local`
+   Edit `.env.local` and configure:
+   - **Google OAuth** (required for authentication and calendar):
+     - Go to [Google Cloud Console](https://console.cloud.google.com/)
+     - Create project and enable Google Calendar API
+     - Create OAuth 2.0 credentials with redirect: `http://localhost:3000/api/auth/callback/google`
+   - **GitHub OAuth** (optional, for GitHub integration):
+     - Go to GitHub Settings > Developer settings > OAuth Apps
+     - Create app with callback: `http://localhost:3000/api/auth/callback/github`
+   - **Feature Flags**: Set `NEXT_PUBLIC_ENABLE_*` flags to `true` only for production-ready features
 
 4. Set up the database:
    ```bash

@@ -78,6 +78,7 @@ export function useRealtimeSync(config: RealtimeSyncConfig = {}) {
             case 'task_update':
             case 'tasks_changed':
               // Refresh tasks when changes are detected
+              const { refreshTasks } = useTaskApi()
               await refreshTasks()
               setStatus(prev => ({ ...prev, lastSync: new Date() }))
               break
@@ -88,6 +89,7 @@ export function useRealtimeSync(config: RealtimeSyncConfig = {}) {
               
             case 'error':
               setStatus(prev => ({ ...prev, error: data.message }))
+              const { error: showError } = useToastFeedback()
               showError(`Sync error: ${data.message}`)
               break
           }
@@ -126,7 +128,7 @@ export function useRealtimeSync(config: RealtimeSyncConfig = {}) {
       // Fall back to polling
       startPolling()
     }
-  }, [finalConfig, refreshTasks, showError])
+  }, [finalConfig.enabled, finalConfig.websocketUrl, finalConfig.maxReconnectAttempts, finalConfig.reconnectDelay])
 
   // Polling fallback
   const startPolling = useCallback(() => {
@@ -275,7 +277,7 @@ export function useRealtimeSync(config: RealtimeSyncConfig = {}) {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [finalConfig.enabled, connect, disconnect, handleVisibilityChange, handleOnline, handleOffline])
+  }, [finalConfig.enabled]) // Only depend on the config flag
 
   // Sync when store's lastSync changes (indicates local changes)
   useEffect(() => {

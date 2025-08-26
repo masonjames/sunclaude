@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { TaskCard } from "@/components/TaskCard"
 import { TaskColumn, STATUS_LANES } from "@/components/TaskColumn"
+import { TaskStatus } from "@/types/task"
 import { AddTaskDialog } from "@/components/AddTaskDialog"
 import { PlanningWizard } from "@/components/planning/PlanningWizard"
 import { TaskBoardSkeleton } from "@/components/skeletons/TaskCardSkeleton"
@@ -39,6 +40,7 @@ export const TaskBoardEnhanced = () => {
 
   // Store and API hooks
   const { 
+    tasks,
     visibleDateRange, 
     loading, 
     error,
@@ -154,7 +156,7 @@ export const TaskBoardEnhanced = () => {
     if (!containerId) return
 
     const { date: targetDate, status: maybeStatus } = parseContainer(containerId)
-    const targetStatus = maybeStatus || 'PLANNED'
+    const targetStatus = (maybeStatus || 'PLANNED') as TaskStatus
 
     try {
       if (active.data.current?.type === 'integration') {
@@ -318,6 +320,7 @@ export const TaskBoardEnhanced = () => {
               {allDates.map((date) => {
                 const dateStr = format(date, 'yyyy-MM-dd')
                 const isToday = dateStr === format(new Date(), 'yyyy-MM-dd')
+                const dateTasks = tasks.filter(task => task.date === dateStr)
                 
                 return (
                   <div
@@ -326,14 +329,9 @@ export const TaskBoardEnhanced = () => {
                     style={{ width: COLUMN_WIDTH - 16 }}
                   >
                     <TaskColumn
-                      date={dateStr}
+                      date={date}
+                      tasks={dateTasks}
                       isToday={isToday}
-                      statusLanes={STATUS_LANES}
-                      onAddTask={(status) => {
-                        setSelectedPlanningDate(date)
-                        setPlanningWizardOpen(true)
-                      }}
-                      showOptimisticStates={true}
                     />
                   </div>
                 )
@@ -344,7 +342,7 @@ export const TaskBoardEnhanced = () => {
           
           <DragOverlay>
             {activeTask ? (
-              <TaskCard task={activeTask} isDragging />
+              <TaskCard task={activeTask} overlay />
             ) : null}
           </DragOverlay>
         </DndContext>
@@ -353,8 +351,12 @@ export const TaskBoardEnhanced = () => {
       {/* Planning Wizard */}
       <PlanningWizard
         open={planningWizardOpen}
-        onOpenChange={setPlanningWizardOpen}
+        onClose={() => setPlanningWizardOpen(false)}
         selectedDate={selectedPlanningDate}
+        onPlanCommitted={() => {
+          setPlanningWizardOpen(false)
+          refreshTasks()
+        }}
       />
     </div>
   )

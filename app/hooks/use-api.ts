@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/contexts/ToastContext"
 import { handleApiResponse, createErrorToast, createSuccessToast } from '@/lib/error-handler'
 
 interface UseApiOptions {
@@ -11,7 +11,7 @@ interface UseApiOptions {
 export function useApi<T>() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  const { toast } = useToast()
+  const { success, error: showError } = useToast()
 
   const execute = useCallback(async <R = T>(
     promise: Promise<Response>,
@@ -31,7 +31,7 @@ export function useApi<T>() {
       const data = await handleApiResponse<R>(response)
 
       if (showSuccessToast && successMessage) {
-        toast(createSuccessToast(successMessage))
+        success(successMessage)
       }
 
       return data
@@ -39,14 +39,14 @@ export function useApi<T>() {
       setError(err as Error)
       
       if (showErrorToast) {
-        toast(createErrorToast(err))
+        showError('Error', err instanceof Error ? err.message : 'An error occurred')
       }
       
       return null
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [success, showError])
 
   return {
     loading,

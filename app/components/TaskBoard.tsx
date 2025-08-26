@@ -163,7 +163,7 @@ export const TaskBoard = () => {
     const dates: Date[] = []
     let currentDate = visibleDateRange.start
     while (currentDate <= visibleDateRange.end) {
-      dates.push(currentDate)
+      dates.push(new Date(currentDate)) // Create new Date object each time
       currentDate = addDays(currentDate, 1)
     }
     return dates

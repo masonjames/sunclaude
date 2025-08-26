@@ -100,7 +100,7 @@ export function TabbedIntegrationPanel() {
         fetch('/api/integrations/gmail'),
         { showSuccessToast: false }
       )
-      if (items) {
+      if (items && Array.isArray(items)) {
         setGmailItems(items.map((item: any) => ({
           id: item.id,
           title: item.subject || item.title,
@@ -126,7 +126,7 @@ export function TabbedIntegrationPanel() {
         fetch('/api/integrations/google/calendar'),
         { showSuccessToast: false }
       )
-      if (items) {
+      if (items && Array.isArray(items)) {
         setCalendarItems(items.map((item: any) => ({
           id: item.id,
           title: item.summary || item.title,
@@ -153,7 +153,7 @@ export function TabbedIntegrationPanel() {
         fetch('/api/integrations/github'),
         { showSuccessToast: false }
       )
-      if (items) {
+      if (items && Array.isArray(items)) {
         setGithubItems(items.map((item: any) => ({
           id: item.id,
           title: item.title,
@@ -180,7 +180,7 @@ export function TabbedIntegrationPanel() {
         fetch('/api/integrations/asana'),
         { showSuccessToast: false }
       )
-      if (items) {
+      if (items && Array.isArray(items)) {
         setAsanaItems(items.map((item: any) => ({
           id: item.gid || item.id,
           title: item.name || item.title,

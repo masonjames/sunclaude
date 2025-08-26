@@ -81,12 +81,33 @@ module.exports = {
             transform: "translateX(100%)",
           },
         },
+        "shimmer": {
+          "0%": {
+            transform: "translateX(-100%)",
+          },
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
+        "wave": {
+          "0%": {
+            transform: "translateX(-100%) skewX(15deg)",
+          },
+          "50%": {
+            transform: "translateX(50%) skewX(15deg)",
+          },
+          "100%": {
+            transform: "translateX(100%) skewX(15deg)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "slide-from-right": "slide-from-right 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
         "slide-to-right": "slide-to-right 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "shimmer": "shimmer 2s ease-in-out infinite",
+        "wave": "wave 2.5s ease-in-out infinite",
       },
     },
   },

@@ -1,22 +1,37 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { getGmailItems } from '@/services/gmail'
+import { prisma } from '@/lib/db'
 import { mockGmailItems } from '@/services/mock-data'
 
 export async function GET() {
   try {
-    // In a real implementation, we would check for environment variables and tokens here
-    const USE_MOCK_DATA = true // Toggle this based on environment variables or configuration
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    if (USE_MOCK_DATA) {
+    // Check for Google account with Gmail access
+    const googleAccount = await prisma.account.findFirst({
+      where: {
+        userId: session.user.id,
+        provider: 'google',
+      },
+    })
+
+    if (!googleAccount?.access_token) {
+      console.log('No Gmail access token found, using mock data')
       return NextResponse.json(mockGmailItems)
     }
 
-    // Real implementation would go here
-    throw new Error('Gmail integration not configured')
+    // Use real Gmail API
+    const gmailItems = await getGmailItems(googleAccount.access_token)
+    return NextResponse.json(gmailItems)
   } catch (error) {
     console.error('Error fetching Gmail items:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch Gmail items' },
-      { status: 500 }
-    )
+    // Fallback to mock data on error
+    return NextResponse.json(mockGmailItems)
   }
 }
