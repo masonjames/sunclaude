@@ -1,15 +1,35 @@
+// Production-ready Postgres configuration
+// To use Postgres instead of SQLite:
+// 1. Copy this file to schema.prisma
+// 2. Update DATABASE_URL in .env to your Postgres connection string
+// 3. Run: npx prisma generate && npx prisma db push
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// SQLite doesn't support enums, we'll use strings with comments for documentation
-// TaskStatus: 'BACKLOG' | 'PLANNED' | 'SCHEDULED' | 'IN_PROGRESS' | 'DONE' | 'DEFERRED' | 'CANCELED'
-// TaskPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+// Enums
+enum TaskStatus {
+  BACKLOG
+  PLANNED
+  SCHEDULED
+  IN_PROGRESS
+  DONE
+  DEFERRED
+  CANCELED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
 
 // User model
 model User {
@@ -31,91 +51,98 @@ model User {
 model Task {
   id               String         @id @default(cuid())
   userId           String
-  user             User           @relation(fields: [userId], references: [id])
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   title            String
   description      String?
-  priority         String?        @default("MEDIUM") // 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  status           String         @default("BACKLOG") // 'BACKLOG' | 'PLANNED' | 'SCHEDULED' | 'IN_PROGRESS' | 'DONE' | 'DEFERRED' | 'CANCELED'
-  plannedDate      DateTime?      // The day the task is planned for (board)
-  dueDate          DateTime?
+  priority         TaskPriority?  @default(MEDIUM)
+  status           TaskStatus     @default(BACKLOG)
+  plannedDate      DateTime?      @db.Date // The day the task is planned for (board)
+  dueDate          DateTime?      @db.Date
   scheduledStart   DateTime?
   scheduledEnd     DateTime?
   estimateMinutes  Int?           // planned effort
   actualMinutes    Int?           @default(0)
   order            Int            @default(0) // sort within column/day
   parentId         String?        // self-relation for subtasks
-  parent           Task?          @relation("Subtasks", fields: [parentId], references: [id])
+  parent           Task?          @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks         Task[]         @relation("Subtasks")
   externalLinks    ExternalItem[] // links to integrations
   calendarEvent    CalendarEvent?
   timeEntries      TimeEntry[]
   rolloverCount    Int            @default(0)
   rolledOverFromId String?
-  deferredTo       DateTime?
-  deferralReason   String?
+  deferredTo       DateTime?      @db.Date
+  deferralReason   String?        @db.Text
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   @@index([userId, plannedDate, status])
   @@index([userId, parentId])
+  @@index([userId, status])
+  @@index([plannedDate])
 }
 
 // Time tracking entries
 model TimeEntry {
   id              String    @id @default(cuid())
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskId          String
-  task            Task      @relation(fields: [taskId], references: [id])
+  task            Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   startedAt       DateTime
   endedAt         DateTime?
   durationMinutes Int?      // computed on end
   createdAt       DateTime  @default(now())
 
   @@index([userId, taskId, startedAt])
+  @@index([userId, startedAt])
 }
 
 // Daily planning and capacity tracking
 model DailyPlan {
   id              String    @id @default(cuid())
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  date            DateTime
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime  @db.Date
   capacityMinutes Int       // from UserSettings
   plannedMinutes  Int       @default(0)
   startedAt       DateTime?
   completedAt     DateTime?
-  notes           String?
+  notes           String?   @db.Text
   createdAt       DateTime  @default(now())
 
   @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
 }
 
 // External integration items
 model ExternalItem {
   id           String    @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id])
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider     String    // 'google_calendar' | 'gmail' | 'github' | 'notion' | 'slack'
   externalId   String
   externalUrl  String?
   direction    String    // 'import' | 'export' | 'two-way'
-  data         String?
+  data         Json?     @db.JsonB
   lastSyncedAt DateTime?
   taskId       String?
-  task         Task?     @relation(fields: [taskId], references: [id])
+  task         Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
   createdAt    DateTime  @default(now())
 
   @@unique([provider, externalId])
+  @@index([userId, provider])
+  @@index([taskId])
 }
 
 // Calendar event synchronization
 model CalendarEvent {
   id           String    @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id])
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskId       String    @unique
-  task         Task      @relation(fields: [taskId], references: [id])
+  task         Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   provider     String    // 'google'
   calendarId   String
   eventId      String    // Google event id
@@ -128,13 +155,14 @@ model CalendarEvent {
   createdAt    DateTime  @default(now())
 
   @@index([provider, calendarId, eventId])
+  @@index([userId, provider])
 }
 
 // Google Calendar sync state
 model GoogleSyncState {
   id          String    @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   resourceId  String    // from watch
   channelId   String
   calendarId  String
@@ -143,12 +171,13 @@ model GoogleSyncState {
   createdAt   DateTime  @default(now())
 
   @@unique([channelId])
+  @@index([userId, calendarId])
 }
 
 // User settings and preferences
 model UserSettings {
   userId                      String  @id
-  user                        User    @relation(fields: [userId], references: [id])
+  user                        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   timezone                    String  @default("UTC")
   workdayStart                Int     @default(9) // 24h
   workdayEnd                  Int     @default(17)
