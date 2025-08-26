@@ -1,45 +1,69 @@
 import { NextResponse } from 'next/server'
-
-// Mock GitHub issues data
-const mockGithubItems = [
-  {
-    id: 'github-1',
-    title: 'Add dark mode toggle',
-    description: 'Implement dark/light mode switching functionality',
-    dueDate: '2024-12-15',
-    priority: 'HIGH'
-  },
-  {
-    id: 'github-2', 
-    title: 'Fix mobile responsive layout',
-    description: 'Kanban board should work on mobile devices',
-    dueDate: '2024-12-16',
-    priority: 'MEDIUM'
-  },
-  {
-    id: 'github-3',
-    title: 'Update README documentation', 
-    description: 'Add setup instructions for new developers',
-    dueDate: '2024-12-18',
-    priority: 'LOW'
-  }
-]
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { getAssignedIssues, createTaskFromIssue } from '@/services/github'
+import { isFeatureEnabled } from '@/lib/flags'
 
 export async function GET() {
   try {
-    // In a real implementation, we would check for environment variables and tokens here
-    const USE_MOCK_DATA = true // Toggle this based on environment variables or configuration
-
-    if (USE_MOCK_DATA) {
-      return NextResponse.json(mockGithubItems)
+    // Feature flag check
+    if (!isFeatureEnabled('github')) {
+      return NextResponse.json(
+        { error: 'GitHub integration is not enabled' },
+        { status: 503 }
+      )
     }
 
-    // Real implementation would go here
-    throw new Error('GitHub integration not configured')
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const items = await getAssignedIssues(session.user.id)
+    return NextResponse.json(items)
   } catch (error) {
     console.error('Error fetching GitHub items:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch GitHub items' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch GitHub items' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    // Feature flag check
+    if (!isFeatureEnabled('github')) {
+      return NextResponse.json(
+        { error: 'GitHub integration is not enabled' },
+        { status: 503 }
+      )
+    }
+
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const { selections, date, status } = await request.json()
+    
+    const createdTasks = []
+    for (const item of selections) {
+      const task = await createTaskFromIssue(session.user.id, item)
+      createdTasks.push(task.id)
+    }
+
+    return NextResponse.json({ taskIds: createdTasks })
+  } catch (error) {
+    console.error('Error creating tasks from GitHub items:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create tasks' },
       { status: 500 }
     )
   }

@@ -145,9 +145,14 @@ async function processGmailSync(job: SyncJob): Promise<SyncJobResult> {
 
 async function processGithubSync(job: SyncJob): Promise<SyncJobResult> {
   try {
-    // For now, return success since GitHub integration uses mock data
-    // TODO: Implement real GitHub service when GitHub SDK is available
-    return { success: true, syncedCount: 0, data: [] }
+    const { getAssignedIssues } = await import('./github')
+    
+    if (!job.userId) {
+      throw new Error('User ID required for GitHub sync')
+    }
+    
+    const items = await getAssignedIssues(job.userId)
+    return { success: true, syncedCount: items.length, data: items }
   } catch (error) {
     console.error('[SyncEngine] GitHub sync failed:', error)
     return { 
