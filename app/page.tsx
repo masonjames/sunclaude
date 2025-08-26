@@ -1,9 +1,10 @@
 "use client"
 
 import { useSession } from 'next-auth/react'
-import { TaskBoard } from '@/components/TaskBoard'
+import { TaskBoardEnhanced } from '@/components/TaskBoardEnhanced'
 import { IntegrationsSidebar } from '@/components/IntegrationsSidebar'
 import { MainSidebar } from '@/components/MainSidebar'
+import { RealtimeSyncProvider } from '@/components/providers/RealtimeSyncProvider'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -43,12 +44,14 @@ export default function HomePage() {
 
   // Show authenticated app
   return (
-    <div className="flex h-screen">
-      <MainSidebar />
-      <main className="flex-1 ml-[60px] mr-[60px] overflow-auto">
-        <TaskBoard />
-      </main>
-      <IntegrationsSidebar />
-    </div>
+    <RealtimeSyncProvider>
+      <div className="flex h-screen">
+        <MainSidebar />
+        <main className="flex-1 ml-[60px] mr-[60px] overflow-auto">
+          <TaskBoardEnhanced />
+        </main>
+        <IntegrationsSidebar />
+      </div>
+    </RealtimeSyncProvider>
   )
 }

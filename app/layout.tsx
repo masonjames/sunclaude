@@ -2,6 +2,7 @@ import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as HotToaster } from 'react-hot-toast'
 import { AuthProvider } from "@/components/auth-provider"
 
 export const metadata = {
@@ -28,6 +29,18 @@ export default function RootLayout({
               {children}
             </SidebarProvider>
             <Toaster />
+            <HotToaster 
+              position="bottom-right"
+              toastOptions={{
+                className: '',
+                duration: 4000,
+                style: {
+                  background: 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  border: '1px solid hsl(var(--border))',
+                },
+              }}
+            />
           </ThemeProvider>
         </AuthProvider>
       </body>
