@@ -1,17 +1,19 @@
+export type TaskStatus = 'PLANNED' | 'SCHEDULED' | 'IN_PROGRESS' | 'DONE' | 'BACKLOG' | 'DEFERRED' | 'CANCELED'
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+
 export interface Task {
   id: string
   title: string
   description?: string
-  priority?: "low" | "medium" | "high"
+  priority?: TaskPriority
   dueTime?: string
-  date: string
+  date: string // yyyy-MM-dd format for board filtering
   // Extended fields for planning workflow
-  status?: "backlog" | "planned" | "scheduled" | "in_progress" | "done" | "deferred"
+  status: TaskStatus
   estimateMinutes?: number
   actualMinutes?: number
   scheduledStart?: string // ISO datetime
   scheduledEnd?: string   // ISO datetime
+  sortOrder?: number
 }
 
-export type TaskStatus = Task["status"]
-export type TaskPriority = Task["priority"]

@@ -29,13 +29,18 @@ export function TaskCard({ task, overlay, onTimerToggle }: TaskCardProps) {
     id: task.id,
     data: {
       type: 'task',
-      task
-    }
+      task,
+      date: task.date,
+      status: task.status
+    },
+    disabled: overlay
   })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: overlay ? 0.9 : isDragging ? 0.7 : 1,
+    cursor: overlay ? 'default' : 'grab',
   }
 
   const handleTimerToggle = async (e: React.MouseEvent) => {
@@ -81,13 +86,13 @@ export function TaskCard({ task, overlay, onTimerToggle }: TaskCardProps) {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(overlay ? {} : attributes)}
+      {...(overlay ? {} : listeners)}
       className={cn(
         "group relative rounded-lg border p-4 shadow-sm transition-all",
         isDragging && "z-50 scale-105 shadow-lg",
         "hover:border-foreground/20 dark:hover:border-foreground/30",
-        "cursor-grab active:cursor-grabbing",
+        !overlay && "cursor-grab active:cursor-grabbing",
         task.hasActiveTimer && "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
       )}
     >
@@ -95,7 +100,7 @@ export function TaskCard({ task, overlay, onTimerToggle }: TaskCardProps) {
         <div className="flex items-start justify-between">
           <h3 className="font-medium leading-none">{task.title}</h3>
           {task.priority && (
-            <Badge variant={task.priority === "high" ? "destructive" : task.priority === "medium" ? "secondary" : "outline"}>
+            <Badge variant={task.priority === "HIGH" ? "destructive" : task.priority === "MEDIUM" ? "secondary" : "outline"}>
               {task.priority}
             </Badge>
           )}

@@ -5,7 +5,7 @@ import { Plus, Calendar } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { TaskCard } from "@/components/TaskCard"
-import { TaskColumn } from "@/components/TaskColumn"
+import { TaskColumn, STATUS_LANES } from "@/components/TaskColumn"
 import { AddTaskDialog } from "@/components/AddTaskDialog"
 import { PlanningWizard } from "@/components/planning/PlanningWizard"
 import { useApi } from "@/hooks/use-api"
@@ -40,8 +40,33 @@ export const TaskBoard = () => {
   })
   const { execute, loading } = useApi<Task[]>()
   
+  // Helper functions for drag and drop
+  const parseContainer = (containerId: string): { date: string; status?: string } => {
+    const [date, status] = containerId.split('__')
+    return { date, status }
+  }
+
+  const getTargetContainerId = (over: DragEndEvent['over']) => {
+    // If over is a sortable item, containerId is in data.current.sortable.containerId
+    const sortable = over?.data?.current?.sortable as any | undefined
+    if (sortable?.containerId) return String(sortable.containerId)
+    return typeof over?.id === 'string' ? over.id : undefined
+  }
+
+  const reindexLane = (items: Task[], insertAt: number, movedId: string, targetDate: string, targetStatus: string): { updated: Task[], orderedIds: string[] } => {
+    const remaining = items.filter(t => t.id !== movedId)
+    const before = remaining.slice(0, insertAt)
+    const after = remaining.slice(insertAt)
+    const newOrder = [...before.map(t => t.id), movedId, ...after.map(t => t.id)]
+    const updated = newOrder.map((id, idx) => {
+      const t = (id === movedId ? tasks.find(x => x.id === movedId)! : items.find(x => x.id === id)!)
+      return { ...t, date: targetDate, status: targetStatus as any, sortOrder: idx }
+    })
+    return { updated, orderedIds: newOrder }
+  }
+  
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
   )
 
@@ -147,10 +172,30 @@ export const TaskBoard = () => {
       return
     }
 
-    const overDate = over.id as string
+    const containerId = getTargetContainerId(over)
+    if (!containerId) {
+      setActiveId(null)
+      setActiveTask(null)
+      return
+    }
+
+    const { date: targetDate, status: maybeStatus } = parseContainer(containerId)
+    const targetStatus = maybeStatus || 'PLANNED'
 
     if (active.data.current?.type === 'integration') {
+      // Handle integration item drops
       const integrationItem = active.data.current.item
+      
+      // Determine target index for proper ordering
+      const targetLaneTasks = tasks
+        .filter(t => t.date === targetDate && (t.status || 'PLANNED') === targetStatus)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      
+      let targetIndex = targetLaneTasks.length // Default: append to end
+      if (over?.data?.current?.sortable?.index != null) {
+        targetIndex = over.data.current.sortable.index
+      }
+
       const newTask = await execute<Task>(
         fetch('/api/tasks', {
           method: 'POST',
@@ -161,7 +206,9 @@ export const TaskBoard = () => {
             title: integrationItem.title,
             description: integrationItem.description,
             priority: integrationItem.priority,
-            date: overDate,
+            date: targetDate,
+            status: targetStatus,
+            sortOrder: targetIndex,
             dueTime: integrationItem.dueDate?.includes('T') 
               ? integrationItem.dueDate.split('T')[1].substring(0, 5)
               : undefined,
@@ -176,78 +223,123 @@ export const TaskBoard = () => {
         setTasks(prev => [...prev, newTask])
       }
     } else {
+      // Handle task moves
       const activeTask = tasks.find(task => task.id === active.id)
       if (!activeTask) return
 
-      // Parse the drop target - could be date (old format) or date__status (new lane format)
-      let targetDate: string
-      let targetStatus: string
-      
-      if (overDate.includes('__')) {
-        // New lane format: "2024-01-15__PLANNED"
-        const [date, status] = overDate.split('__')
-        targetDate = date
-        targetStatus = status
+      // Determine target index
+      const targetLaneTasks = tasks
+        .filter(t => t.date === targetDate && (t.status || 'PLANNED') === targetStatus)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
+      let targetIndex: number
+      if (over?.data?.current?.sortable?.index != null) {
+        // Dropped over a task; place before it
+        targetIndex = over.data.current.sortable.index
       } else {
-        // Old date format: "2024-01-15" 
-        targetDate = overDate
-        targetStatus = 'PLANNED' // Default status when dropping on date
+        // Dropped on lane or column; append to end
+        targetIndex = targetLaneTasks.length
       }
 
-      // Only update if something changed
+      // Check if anything actually changed
       const dateChanged = activeTask.date !== targetDate
-      const statusChanged = activeTask.status !== targetStatus
-      
-      if (dateChanged || statusChanged) {
-        // Optimistic update
-        setTasks(prev => prev.map(task =>
-          task.id === activeTask.id
-            ? { 
-                ...task, 
-                date: targetDate, 
-                plannedDate: targetDate,
-                status: targetStatus as any
-              }
-            : task
-        ))
+      const statusChanged = (activeTask.status || 'PLANNED') !== targetStatus
+      const currentIndex = targetLaneTasks.findIndex(t => t.id === activeTask.id)
+      const orderChanged = currentIndex >= 0 && currentIndex !== targetIndex
 
-        // Server update
-        const success = await execute(
-          fetch('/api/tasks', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              id: activeTask.id,
-              date: targetDate,
-              plannedDate: targetDate,
-              status: targetStatus,
-            }),
-          }),
-          {
-            successMessage: `Task moved to ${targetStatus.toLowerCase()}`
-          }
+      if (dateChanged || statusChanged || orderChanged) {
+        // Compute new ordering
+        const { updated, orderedIds } = reindexLane(
+          targetLaneTasks,
+          targetIndex,
+          activeTask.id,
+          targetDate,
+          targetStatus
         )
 
-        // Rollback on failure
-        if (!success) {
-          setTasks(prev => prev.map(task =>
-            task.id === activeTask.id
-              ? { 
-                  ...task, 
-                  date: activeTask.date,
-                  status: activeTask.status
-                }
-              : task
-          ))
+        // 1) Optimistic local state update
+        setTasks(prev => {
+          const mapped = prev.map(t => {
+            const upd = updated.find(u => u.id === t.id)
+            if (upd) return upd
+            if (t.id === activeTask.id) return updated.find(u => u.id === t.id)! // ensure moved task is updated
+            return t
+          })
+          return mapped
+        })
+
+        // 2) Persist via batch reorder endpoint
+        try {
+          const success = await execute(
+            fetch('/api/tasks/reorder', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                date: targetDate,
+                status: targetStatus,
+                orderedIds
+              })
+            }),
+            {
+              successMessage: 'Tasks reordered'
+            }
+          )
+
+          // Rollback on failure
+          if (!success) {
+            setTasks(prev => prev.map(task =>
+              task.id === activeTask.id
+                ? { 
+                    ...task, 
+                    date: activeTask.date,
+                    status: activeTask.status,
+                    sortOrder: activeTask.sortOrder
+                  }
+                : task
+            ))
+          }
+        } catch (error) {
+          // Fallback: individual task update if batch endpoint doesn't exist
+          const success = await execute(
+            fetch('/api/tasks', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                id: activeTask.id,
+                date: targetDate,
+                status: targetStatus,
+                sortOrder: targetIndex,
+              }),
+            }),
+            {
+              successMessage: `Task moved to ${targetStatus.toLowerCase()}`
+            }
+          )
+
+          if (!success) {
+            // Rollback
+            setTasks(prev => prev.map(task =>
+              task.id === activeTask.id
+                ? { 
+                    ...task, 
+                    date: activeTask.date,
+                    status: activeTask.status,
+                    sortOrder: activeTask.sortOrder
+                  }
+                : task
+            ))
+          }
         }
       }
     }
 
     setActiveId(null)
     setActiveTask(null)
-  }, [execute, tasks])
+  }, [execute, tasks, parseContainer, getTargetContainerId, reindexLane])
 
   const handleTaskAdded = React.useCallback(() => {
     fetchTasks(visibleDateRange.start, visibleDateRange.end)

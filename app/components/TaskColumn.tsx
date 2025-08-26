@@ -3,20 +3,11 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { useDroppable } from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { TaskCard } from "./TaskCard"
 import { cn } from "@/lib/utils"
+import { Task } from "@/types/task"
 
-interface Task {
-  id: string
-  title: string
-  description?: string
-  priority?: "low" | "medium" | "high"
-  status?: string
-  estimateMinutes?: number
-  actualMinutes?: number
-  hasActiveTimer?: boolean
-  date: string
-}
 
 interface TaskColumnProps {
   date: Date
@@ -25,15 +16,15 @@ interface TaskColumnProps {
   onTimerToggle?: () => void
 }
 
-const STATUS_LANES = [
+export const STATUS_LANES = [
   { key: 'PLANNED', label: 'Planned', color: 'bg-blue-50 border-blue-200' },
   { key: 'SCHEDULED', label: 'Scheduled', color: 'bg-green-50 border-green-200' },
   { key: 'IN_PROGRESS', label: 'In Progress', color: 'bg-yellow-50 border-yellow-200' },
   { key: 'DONE', label: 'Done', color: 'bg-gray-50 border-gray-200' },
-]
+] as const
 
 function StatusLane({ status, tasks, dateStr, onTimerToggle }: {
-  status: typeof STATUS_LANES[0]
+  status: typeof STATUS_LANES[number]
   tasks: Task[]
   dateStr: string
   onTimerToggle?: () => void
@@ -60,15 +51,21 @@ function StatusLane({ status, tasks, dateStr, onTimerToggle }: {
           {tasks.length}
         </span>
       </div>
-      <div className="space-y-2">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            onTimerToggle={onTimerToggle}
-          />
-        ))}
-      </div>
+      <SortableContext 
+        id={laneId} 
+        items={tasks.map(t => t.id)} 
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-2">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onTimerToggle={onTimerToggle}
+            />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   )
 }
@@ -76,9 +73,14 @@ function StatusLane({ status, tasks, dateStr, onTimerToggle }: {
 export function TaskColumn({ date, tasks, isToday, onTimerToggle }: TaskColumnProps) {
   const dateStr = format(date, 'yyyy-MM-dd')
   
-  // Group tasks by status
+  // Column-level droppable as fallback
+  const { setNodeRef: setColumnRef, isOver: isOverColumn } = useDroppable({ 
+    id: dateStr 
+  })
+  
+  // Group tasks by status (fallback to PLANNED if no status)
   const tasksByStatus = STATUS_LANES.reduce((acc, lane) => {
-    acc[lane.key] = tasks.filter(task => task.status === lane.key)
+    acc[lane.key] = tasks.filter(task => (task.status || 'PLANNED') === lane.key)
     return acc
   }, {} as Record<string, Task[]>)
 
@@ -86,10 +88,13 @@ export function TaskColumn({ date, tasks, isToday, onTimerToggle }: TaskColumnPr
   const totalEstimatedMinutes = tasks.reduce((sum, task) => sum + (task.estimateMinutes || 0), 0)
 
   return (
-    <div className={cn(
-      "flex h-full w-[340px] shrink-0 flex-col gap-3 rounded-lg border p-4",
-      isToday && "border-primary bg-primary/5"
-    )}>
+    <div 
+      ref={setColumnRef}
+      className={cn(
+        "flex h-full w-[360px] shrink-0 flex-col gap-3 rounded-lg border p-4",
+        isToday && "border-primary bg-primary/5",
+        isOverColumn && "bg-primary/5 border-primary"
+      )}>
       {/* Column Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">

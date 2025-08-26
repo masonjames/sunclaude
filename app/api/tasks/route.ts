@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
     
     const tasks = await prisma.task.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { plannedDate: 'asc' },
+        { status: 'asc' },
+        { order: 'asc' },
+        { createdAt: 'desc' }
+      ],
       include: {
         timeEntries: {
           where: { endedAt: null },
@@ -42,6 +47,7 @@ export async function GET(request: NextRequest) {
       ...task,
       date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
       plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      sortOrder: task.order,
       hasActiveTimer: task.timeEntries.length > 0,
     }))
     
@@ -82,6 +88,7 @@ export async function POST(request: Request) {
         estimateMinutes: json.estimateMinutes || null,
         scheduledStart: json.scheduledStart ? new Date(json.scheduledStart) : null,
         scheduledEnd: json.scheduledEnd ? new Date(json.scheduledEnd) : null,
+        order: json.sortOrder ?? 0,
       },
     })
     
@@ -90,6 +97,7 @@ export async function POST(request: Request) {
       ...task,
       date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
       plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      sortOrder: task.order,
     }
     
     return NextResponse.json(transformedTask)
@@ -141,6 +149,7 @@ export async function PUT(request: Request) {
     if (data.estimateMinutes !== undefined) updateData.estimateMinutes = data.estimateMinutes
     if (data.actualMinutes !== undefined) updateData.actualMinutes = data.actualMinutes
     if (data.order !== undefined) updateData.order = data.order
+    if (data.sortOrder !== undefined) updateData.order = data.sortOrder
     if (data.scheduledStart !== undefined) updateData.scheduledStart = data.scheduledStart ? new Date(data.scheduledStart) : null
     if (data.scheduledEnd !== undefined) updateData.scheduledEnd = data.scheduledEnd ? new Date(data.scheduledEnd) : null
     
@@ -154,6 +163,7 @@ export async function PUT(request: Request) {
       ...task,
       date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
       plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      sortOrder: task.order,
     }
     
     return NextResponse.json(transformedTask)

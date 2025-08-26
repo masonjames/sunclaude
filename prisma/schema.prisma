@@ -100,10 +100,11 @@ model Task {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  @@index([userId, plannedDate, status])
+  @@index([userId, plannedDate, status, order])
   @@index([userId, parentId])
   @@index([userId, status])
   @@index([plannedDate])
+  @@index([userId, plannedDate, status])
   @@map("tasks")
 }
 
