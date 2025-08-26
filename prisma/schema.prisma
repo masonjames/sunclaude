@@ -7,13 +7,175 @@ datasource db {
   url      = "file:./dev.db"
 }
 
+// NextAuth.js Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  tasks         Task[]
+  settings      UserSettings?
+  googleSyncStates GoogleSyncState[]
+  calendarEvents   CalendarEvent[]
+  externalItems    ExternalItem[]
+  integrationConnections IntegrationConnection[]
+  
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+// Application Models
 model Task {
   id          String    @id @default(cuid())
+  userId      String?   @map("user_id") // Temporarily optional during migration
   title       String
   description String?
   priority    String?   // "low" | "medium" | "high"
   dueTime     String?
   date        String    // YYYY-MM-DD format
+  scheduledStart DateTime? @map("scheduled_start")
+  scheduledEnd   DateTime? @map("scheduled_end")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalItems  ExternalItem[]
+  calendarEvents CalendarEvent[]
+  
+  @@index([userId, date])
+  @@map("tasks")
+}
+
+// Integration Models
+model UserSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique @map("user_id")
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  autoCreateCalendarEvents Boolean @default(false) @map("auto_create_calendar_events")
+  defaultCalendarId       String?  @map("default_calendar_id")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model GoogleSyncState {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarId      String   @map("calendar_id")
+  channelId       String?  @unique @map("channel_id")
+  resourceId      String?  @map("resource_id")
+  expiration      DateTime? 
+  syncToken       String?  @map("sync_token")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, calendarId])
+  @@index([channelId])
+  @@map("google_sync_states")
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String?  @map("task_id")
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  provider    String   // "google", "outlook", etc.
+  externalId  String   @map("external_id")
+  iCalUID     String?  @map("ical_uid")
+  summary     String
+  description String?
+  start       DateTime
+  end         DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@unique([provider, iCalUID])
+  @@index([userId])
+  @@index([taskId])
+  @@map("calendar_events")
+}
+
+model ExternalItem {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String?  @map("task_id")
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  provider    String   // "gmail", "github", "notion", "slack", etc.
+  externalId  String   @map("external_id")
+  title       String
+  description String?
+  url         String?
+  metadata    String?  // JSON string for provider-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([userId])
+  @@index([taskId])
+  @@map("external_items")
+}
+
+model IntegrationConnection {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   // "notion", "slack", etc.
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  scope        String?
+  metadata     String?  // JSON string for provider-specific data
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("integration_connections")
 }

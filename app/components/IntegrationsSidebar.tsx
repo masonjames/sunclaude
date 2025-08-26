@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronLeft, ChevronRight, Mail, ListTodo, Calendar, FileText, LineChart } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Mail, ListTodo, Calendar, FileText, LineChart, Github, Hash } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useSidebar } from "@/components/ui/sidebar"
@@ -9,7 +9,7 @@ import { useApi } from "@/hooks/use-api"
 import { cn } from "@/lib/utils"
 import { IntegrationPanel } from "./integrations/IntegrationPanel"
 
-type Integration = "gmail" | "asana" | "calendar" | "notion" | "linear"
+type Integration = "gmail" | "asana" | "calendar" | "notion" | "linear" | "github" | "slack"
 
 interface IntegrationItem {
   id: string
@@ -39,7 +39,9 @@ export const IntegrationsSidebar = () => {
     asana: { items: [], loading: false },
     calendar: { items: [], loading: false },
     notion: { items: [], loading: false },
-    linear: { items: [], loading: false }
+    linear: { items: [], loading: false },
+    github: { items: [], loading: false },
+    slack: { items: [], loading: false }
   })
 
   const fetchIntegrationItems = React.useCallback(async (integration: Integration) => {
@@ -192,6 +194,34 @@ export const IntegrationsSidebar = () => {
             {integrations.linear.unreadCount ? (
               <Badge variant="secondary" className="absolute -right-1 -top-1">
                 {integrations.linear.unreadCount}
+              </Badge>
+            ) : null}
+          </Button>
+
+          <Button
+            variant={activeIntegration === "github" ? "secondary" : "ghost"}
+            size="icon"
+            className="relative h-[60px] w-[60px] rounded-none"
+            onClick={() => setActiveIntegration("github")}
+          >
+            <Github className="h-5 w-5" />
+            {integrations.github.unreadCount ? (
+              <Badge variant="secondary" className="absolute -right-1 -top-1">
+                {integrations.github.unreadCount}
+              </Badge>
+            ) : null}
+          </Button>
+
+          <Button
+            variant={activeIntegration === "slack" ? "secondary" : "ghost"}
+            size="icon"
+            className="relative h-[60px] w-[60px] rounded-none"
+            onClick={() => setActiveIntegration("slack")}
+          >
+            <Hash className="h-5 w-5" />
+            {integrations.slack.unreadCount ? (
+              <Badge variant="secondary" className="absolute -right-1 -top-1">
+                {integrations.slack.unreadCount}
               </Badge>
             ) : null}
           </Button>
