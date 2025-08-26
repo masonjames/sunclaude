@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { useSidebar } from "@/components/ui/sidebar"
-import { Calendar, Focus, ChevronLeft, ChevronRight, Sun } from "lucide-react"
+import { Calendar, Focus, ChevronLeft, ChevronRight, Sun, LogOut, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useSession, signOut } from "next-auth/react"
 
 export function MainSidebar() {
   const { isOpen, setIsOpen } = useSidebar()
+  const { data: session } = useSession()
 
   return (
     <div className={cn(
@@ -76,11 +78,38 @@ export function MainSidebar() {
           {isOpen && <span className="ml-2">Focus</span>}
         </Button>
       </nav>
-      {isOpen && (
-        <div className="border-t p-4">
-          <ThemeToggle />
-        </div>
-      )}
+      <div className="mt-auto">
+        {isOpen && session && (
+          <div className="border-t p-4 space-y-2">
+            <div className="flex items-center space-x-2 text-sm">
+              <User className="h-4 w-4" />
+              <span className="truncate">{session.user?.email}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+            <ThemeToggle />
+          </div>
+        )}
+        {!isOpen && session && (
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => signOut()}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
