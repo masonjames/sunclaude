@@ -4,7 +4,9 @@ import { useSession } from 'next-auth/react'
 import { TaskBoardEnhanced } from '@/components/TaskBoardEnhanced'
 import { IntegrationsSidebar } from '@/components/IntegrationsSidebar'
 import { MainSidebar } from '@/components/MainSidebar'
+import { MobileLayout } from '@/components/mobile/MobileLayout'
 import { RealtimeSyncProvider } from '@/components/providers/RealtimeSyncProvider'
+import { PWAProvider } from '@/components/providers/PWAProvider'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -44,14 +46,22 @@ export default function HomePage() {
 
   // Show authenticated app
   return (
-    <RealtimeSyncProvider>
-      <div className="flex h-screen">
-        <MainSidebar />
-        <main className="flex-1 ml-[60px] mr-[60px] overflow-auto">
-          <TaskBoardEnhanced />
-        </main>
-        <IntegrationsSidebar />
-      </div>
-    </RealtimeSyncProvider>
+    <PWAProvider>
+      <RealtimeSyncProvider>
+        {/* Mobile Layout */}
+        <div className="block md:hidden">
+          <MobileLayout />
+        </div>
+        
+        {/* Desktop Layout */}
+        <div className="hidden md:flex h-screen">
+          <MainSidebar />
+          <main className="flex-1 ml-[60px] mr-[60px] overflow-auto">
+            <TaskBoardEnhanced />
+          </main>
+          <IntegrationsSidebar />
+        </div>
+      </RealtimeSyncProvider>
+    </PWAProvider>
   )
 }
