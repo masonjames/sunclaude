@@ -20,6 +20,7 @@ interface TaskStore {
   visibleDateRange: { start: Date; end: Date }
   optimisticOperations: Set<string>
   lastSync: Date | null
+  _taskStats: { total: number; completed: number; inProgress: number; planned: number } | null
   
   // Basic Actions
   setTasks: (tasks: Task[]) => void
@@ -62,16 +63,14 @@ const DAYS_TO_LOAD = 30
 
 // Helper function to generate optimistic task
 const createOptimisticTask = (
-  data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, 
+  data: Omit<Task, 'id'>,
   tempId?: string
 ): Task => ({
+  ...data,
   id: tempId || `optimistic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-  createdAt: new Date(),
-  updatedAt: new Date(),
   sortOrder: data.sortOrder ?? 0,
   status: data.status || 'PLANNED',
   priority: data.priority || 'MEDIUM',
-  ...data,
 })
 
 export const useTaskStore = create<TaskStore>()(
@@ -93,21 +92,25 @@ export const useTaskStore = create<TaskStore>()(
       setTasks: (tasks) => set((state) => {
         state.tasks = tasks
         state.lastSync = new Date()
+        state._taskStats = null // Clear cache
       }),
 
       addTask: (task) => set((state) => {
         state.tasks.push(task)
+        state._taskStats = null // Clear cache
       }),
 
       updateTask: (id, updates) => set((state) => {
         const index = state.tasks.findIndex(t => t.id === id)
         if (index !== -1) {
-          state.tasks[index] = { ...state.tasks[index], ...updates, updatedAt: new Date() }
+          state.tasks[index] = { ...state.tasks[index], ...updates,  }
+          state._taskStats = null // Clear cache
         }
       }),
 
       deleteTask: (id) => set((state) => {
         state.tasks = state.tasks.filter(t => t.id !== id)
+        state._taskStats = null // Clear cache
       }),
 
       setLoading: (loading) => set((state) => {
@@ -177,7 +180,7 @@ export const useTaskStore = create<TaskStore>()(
         set((state) => {
           const index = state.tasks.findIndex(t => t.id === id)
           if (index !== -1) {
-            state.tasks[index] = { ...state.tasks[index], ...updates, updatedAt: new Date() }
+            state.tasks[index] = { ...state.tasks[index], ...updates,  }
           }
           state.optimisticOperations.add(opId)
         })
@@ -265,7 +268,7 @@ export const useTaskStore = create<TaskStore>()(
                 date: targetDate,
                 status: targetStatus,
                 sortOrder: index,
-                updatedAt: new Date()
+                
               }
             }
           })
@@ -306,14 +309,16 @@ export const useTaskStore = create<TaskStore>()(
           .filter(task => task.date === date)
           .sort((a, b) => {
             // Sort by status, then by sortOrder, then by creation time
-            const statusOrder = { PLANNED: 0, SCHEDULED: 1, IN_PROGRESS: 2, DONE: 3 }
+            const statusOrder: Record<TaskStatus, number> = {
+              BACKLOG: -1, PLANNED: 0, SCHEDULED: 1, IN_PROGRESS: 2, DONE: 3, DEFERRED: 4, CANCELED: 5
+            }
             const statusDiff = statusOrder[a.status || 'PLANNED'] - statusOrder[b.status || 'PLANNED']
             if (statusDiff !== 0) return statusDiff
             
             const orderDiff = (a.sortOrder || 0) - (b.sortOrder || 0)
             if (orderDiff !== 0) return orderDiff
             
-            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            return a.id.localeCompare(b.id) // Fallback to ID-based sorting
           })
       },
 
@@ -354,15 +359,32 @@ export const useTaskStore = create<TaskStore>()(
         return filtered
       },
 
+      // Cached task stats to prevent infinite loops
+      _taskStats: null as { total: number; completed: number; inProgress: number; planned: number } | null,
+      
       getTaskStats: () => {
-        const tasks = get().tasks
-        return {
+        const state = get()
+        // Return cached stats if available and tasks haven't changed
+        if (state._taskStats) {
+          return state._taskStats
+        }
+        
+        // Calculate fresh stats
+        const tasks = state.tasks
+        const stats = {
           total: tasks.length,
           completed: tasks.filter(t => t.status === 'DONE').length,
           inProgress: tasks.filter(t => t.status === 'IN_PROGRESS').length,
           planned: tasks.filter(t => t.status === 'PLANNED').length,
         }
+        
+        // Cache the stats
+        set((state) => { state._taskStats = stats })
+        return stats
       },
+
+      // Clear cached stats when tasks change
+      _clearStatsCache: () => set((state) => { state._taskStats = null }),
 
       // Date Range Management
       setVisibleDateRange: (range) => set((state) => {

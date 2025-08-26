@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     // Check if user has GitHub access token
     // In a real implementation, this would check the database for stored tokens
-    const hasGitHubToken = !!process.env.GITHUB_ACCESS_TOKEN || !!session.accessToken
+    const hasGitHubToken = !!process.env.GITHUB_ACCESS_TOKEN
 
     // For demo purposes, simulate connection status
     const USE_MOCK_DATA = true

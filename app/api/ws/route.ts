@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Utility functions for WebSocket management
-export function broadcastToUser(userId: string, message: any) {
+function broadcastToUser(userId: string, message: any) {
   const userConnections = connections.get(userId)
   if (userConnections) {
     const messageStr = JSON.stringify(message)
@@ -43,7 +43,7 @@ export function broadcastToUser(userId: string, message: any) {
   }
 }
 
-export function addConnection(userId: string, ws: WebSocket) {
+function addConnection(userId: string, ws: WebSocket) {
   if (!connections.has(userId)) {
     connections.set(userId, new Set())
   }
@@ -55,7 +55,7 @@ export function addConnection(userId: string, ws: WebSocket) {
   })
 }
 
-export function removeConnection(userId: string, ws: WebSocket) {
+function removeConnection(userId: string, ws: WebSocket) {
   const userConnections = connections.get(userId)
   if (userConnections) {
     userConnections.delete(ws)
@@ -66,7 +66,7 @@ export function removeConnection(userId: string, ws: WebSocket) {
 }
 
 // Broadcast task changes to relevant users
-export function broadcastTaskChange(taskData: any, userIds: string[]) {
+function broadcastTaskChange(taskData: any, userIds: string[]) {
   const message = {
     type: 'task_update',
     data: taskData,

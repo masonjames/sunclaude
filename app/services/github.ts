@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest'
 import { withGitHubClient } from '@/lib/oauth/github'
 import { Task } from '@/types/task'
-import prisma from '@/lib/prisma'
+import { prisma } from '@/lib/db'
 
 export type NormalizedItem = {
   id: string
@@ -51,11 +51,8 @@ export async function createTaskFromIssue(userId: string, item: NormalizedItem):
       status: 'PLANNED',
       priority: item.priority || 'MEDIUM',
       plannedDate: item.dueDate ? new Date(item.dueDate) : new Date(),
-      externalId: item.id,
-      externalUrl: item.url,
-      externalSource: 'github',
       userId,
-      sortOrder: 0 // Will be set by the client when dropped
+      order: 0 // Will be set by the client when dropped
     }
   })
 
@@ -65,10 +62,8 @@ export async function createTaskFromIssue(userId: string, item: NormalizedItem):
     description: task.description || undefined,
     status: task.status as any,
     priority: task.priority as any,
-    date: task.plannedDate.toISOString().split('T')[0],
-    dueTime: task.dueTime || undefined,
-    externalUrl: task.externalUrl || undefined,
-    sortOrder: task.sortOrder || undefined
+    date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    sortOrder: task.order || undefined
   }
 }
 
