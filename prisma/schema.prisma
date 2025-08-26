@@ -83,7 +83,7 @@ model Task {
   dueDate          DateTime?
   scheduledStart   DateTime?
   scheduledEnd     DateTime?
-  estimateMinutes  Int?           // planned effort
+  estimateMinutes  Int?           // planned effort (renamed from estimatedMinutes for consistency)
   actualMinutes    Int?           @default(0)
   order            Int            @default(0) // sort within column/day
   parentId         String?        @map("parent_id") // self-relation for subtasks
@@ -134,6 +134,7 @@ model DailyPlan {
   startedAt       DateTime? @map("started_at")
   completedAt     DateTime? @map("completed_at")
   notes           String?
+  summary         String?   // Added for Phase 4 - daily summary JSON
   createdAt       DateTime  @default(now()) @map("created_at")
 
   @@unique([userId, date])
@@ -215,6 +216,8 @@ model UserSettings {
   dailyShutdownHour           Int     @default(17) @map("daily_shutdown_hour")
   autoSyncCalendar            Boolean @default(false) @map("auto_sync_calendar")
   autoCreateCalendarEvents    Boolean @default(false) @map("auto_create_calendar_events")
+  autoRollover                Boolean @default(true) @map("auto_rollover") // Phase 4 addition
+  slackWebhookUrl             String? @map("slack_webhook_url") // Phase 4 addition
 
   @@map("user_settings")
 }

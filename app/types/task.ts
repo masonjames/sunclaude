@@ -11,6 +11,9 @@ export interface Task {
   actualMinutes?: number
   scheduledStart?: string // ISO datetime
   scheduledEnd?: string   // ISO datetime
+  // Phase 4 additions for timer tracking
+  hasActiveTimer?: boolean
+  timeEntries?: any[] // For checking active timers
 }
 
 export type TaskStatus = Task["status"]

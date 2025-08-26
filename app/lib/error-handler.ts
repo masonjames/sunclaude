@@ -1,5 +1,3 @@
-import * as React from "react"
-
 export type ErrorResponse = {
   message: string
   code?: string
@@ -56,12 +54,14 @@ export function createErrorToast(error: unknown) {
 
   return {
     variant: "destructive" as const,
+    title: "Error",
     description,
   }
 }
 
 export function createSuccessToast(message: string) {
   return {
+    title: "Success",
     description: message,
   }
 }

@@ -3,8 +3,8 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  const today = new Date().toISOString().split('T')[0]
-  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const today = new Date()
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
   // Create or find test user
   let testUser = await prisma.user.findUnique({
@@ -20,15 +20,30 @@ async function main() {
     })
   }
 
+  // Create or update user settings (Phase 4 addition)
+  await prisma.userSettings.upsert({
+    where: { userId: testUser.id },
+    update: {
+      autoRollover: true,
+      dailyShutdownHour: 18,
+    },
+    create: {
+      userId: testUser.id,
+      autoRollover: true,
+      dailyShutdownHour: 18,
+    }
+  })
+
   const tasks = [
     {
       title: "Design Review",
       description: "Review new homepage design",
       priority: "HIGH",
       status: "PLANNED",
-      plannedDate: new Date(today),
-      dueDate: new Date(today),
-      estimateMinutes: 60,
+      plannedDate: today,
+      dueDate: today,
+      estimateMinutes: 45,
+      actualMinutes: 0,
       userId: testUser.id,
     },
     {
@@ -36,8 +51,11 @@ async function main() {
       description: "Weekly sync with the team",
       priority: "MEDIUM",
       status: "SCHEDULED",
-      plannedDate: new Date(today),
+      plannedDate: today,
+      scheduledStart: new Date(today.setHours(11, 0, 0, 0)),
+      scheduledEnd: new Date(today.setHours(11, 30, 0, 0)),
       estimateMinutes: 30,
+      actualMinutes: 0,
       userId: testUser.id,
     },
     {
@@ -45,8 +63,9 @@ async function main() {
       description: "Update API documentation",
       priority: "LOW",
       status: "BACKLOG",
-      plannedDate: new Date(tomorrow),
-      estimateMinutes: 120,
+      plannedDate: tomorrow,
+      estimateMinutes: 60,
+      actualMinutes: 0,
       userId: testUser.id,
     },
   ]
@@ -56,6 +75,8 @@ async function main() {
       data: task,
     })
   }
+
+  console.log('Seed data created successfully')
 }
 
 main()
