@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { Plus } from 'lucide-react'
+import { Plus, Calendar } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { TaskCard } from "@/components/TaskCard"
 import { TaskColumn } from "@/components/TaskColumn"
 import { AddTaskDialog } from "@/components/AddTaskDialog"
+import { PlanningWizard } from "@/components/planning/PlanningWizard"
 import { useApi } from "@/hooks/use-api"
 import {
   DndContext,
@@ -29,6 +30,14 @@ interface Task {
   priority?: "low" | "medium" | "high"
   dueTime?: string
   date: string
+  status?: string
+  plannedDate?: string
+  estimateMinutes?: number
+  actualMinutes?: number
+  scheduledStart?: string
+  scheduledEnd?: string
+  rolloverCount?: number
+  source?: string
 }
 
 const DAYS_TO_LOAD = 30 // Number of days to load in each direction
@@ -39,6 +48,8 @@ export const TaskBoard = () => {
   const [tasks, setTasks] = React.useState<Task[]>([])
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [activeTask, setActiveTask] = React.useState<Task | null>(null)
+  const [planningWizardOpen, setPlanningWizardOpen] = React.useState(false)
+  const [selectedPlanningDate, setSelectedPlanningDate] = React.useState(new Date())
   const [visibleDateRange, setVisibleDateRange] = React.useState({
     start: subDays(new Date(), DAYS_TO_LOAD),
     end: addDays(new Date(), DAYS_TO_LOAD)
@@ -186,7 +197,7 @@ export const TaskBoard = () => {
       if (activeTask && activeTask.date !== overDate) {
         setTasks(prev => prev.map(task =>
           task.id === activeTask.id
-            ? { ...task, date: overDate }
+            ? { ...task, date: overDate, plannedDate: overDate, status: 'PLANNED' }
             : task
         ))
 
@@ -199,6 +210,8 @@ export const TaskBoard = () => {
             body: JSON.stringify({
               id: activeTask.id,
               date: overDate,
+              plannedDate: overDate,
+              status: 'PLANNED',
             }),
           }),
           {
@@ -224,11 +237,31 @@ export const TaskBoard = () => {
     fetchTasks(visibleDateRange.start, visibleDateRange.end)
   }, [fetchTasks, visibleDateRange])
 
+  const handleOpenPlanningWizard = React.useCallback((date?: Date) => {
+    if (date) {
+      setSelectedPlanningDate(date)
+    }
+    setPlanningWizardOpen(true)
+  }, [])
+
+  const handlePlanCommitted = React.useCallback(() => {
+    fetchTasks(visibleDateRange.start, visibleDateRange.end)
+  }, [fetchTasks, visibleDateRange])
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-lg font-semibold">Task Board</h2>
-        <AddTaskDialog onTaskAdded={handleTaskAdded} />
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => handleOpenPlanningWizard(new Date())}
+            variant="outline"
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Plan Day
+          </Button>
+          <AddTaskDialog onTaskAdded={handleTaskAdded} />
+        </div>
       </div>
       <div className="h-full">
         <DndContext
@@ -279,6 +312,13 @@ export const TaskBoard = () => {
           </DragOverlay>
         </DndContext>
       </div>
+      
+      <PlanningWizard
+        open={planningWizardOpen}
+        onClose={() => setPlanningWizardOpen(false)}
+        selectedDate={selectedPlanningDate}
+        onPlanCommitted={handlePlanCommitted}
+      />
     </div>
   )
 }

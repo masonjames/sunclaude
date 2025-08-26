@@ -8,12 +8,50 @@ datasource db {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  priority    String?   // "low" | "medium" | "high"
-  dueTime     String?
-  date        String    // YYYY-MM-DD format
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  title             String
+  description       String?
+  priority          String?   // "low" | "medium" | "high"
+  dueTime           String?
+  date              String    // YYYY-MM-DD format - deprecated, use plannedDate
+  status            String    @default("PLANNED") // "BACKLOG" | "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "DEFERRED"
+  plannedDate       DateTime? // When the task is planned to be done
+  estimateMinutes   Int?      // Estimated time in minutes
+  actualMinutes     Int?      // Actual time spent in minutes
+  scheduledStart    DateTime? // Scheduled start time for the task
+  scheduledEnd      DateTime? // Scheduled end time for the task
+  rolloverCount     Int       @default(0) // Number of times task has been rolled over
+  rolledOverFromId  String?   // ID of the original task if this was rolled over
+  deferredTo        DateTime? // Date task was deferred to
+  deferReason       String?   // Reason for deferral
+  source            String?   // "manual" | "gmail" | "github" | "notion" | "asana" | "linear"
+  sourceId          String?   // External ID from the source system
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  dailyPlanId       String?
+  dailyPlan         DailyPlan? @relation(fields: [dailyPlanId], references: [id])
+}
+
+model DailyPlan {
+  id                String    @id @default(cuid())
+  userId            String    // Will be used when we add user auth
+  date              DateTime  @unique // The date this plan is for
+  capacityMinutes   Int       // Total capacity for the day
+  plannedMinutes    Int       @default(0) // Total planned minutes
+  actualMinutes     Int       @default(0) // Total actual minutes spent
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  tasks             Task[]
+}
+
+model UserSettings {
+  id                        String    @id @default(cuid())
+  userId                    String    @unique // Will be used when we add user auth
+  defaultDailyCapacityMinutes Int     @default(480) // 8 hours default
+  timezone                  String    @default("UTC")
+  workingHours              String    @default("09:00-17:00") // Default working hours
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 }
