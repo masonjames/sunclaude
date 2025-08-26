@@ -31,7 +31,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
     
-    return NextResponse.json(tasks)
+    // Transform tasks to include legacy date field for backward compatibility
+    const transformedTasks = tasks.map(task => ({
+      ...task,
+      date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+    }))
+    
+    return NextResponse.json(transformedTasks)
   } catch (error) {
     console.error('Error fetching tasks:', error)
     return NextResponse.json({ error: 'Error fetching tasks' }, { status: 500 })
@@ -53,6 +60,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
     
+    // Handle both plannedDate and legacy date field
+    const dateValue = json.plannedDate || json.date
+    
     const task = await prisma.task.create({
       data: {
         userId: session.user.id, // Associate with authenticated user
@@ -60,12 +70,22 @@ export async function POST(request: Request) {
         description: json.description || null,
         priority: json.priority || 'MEDIUM',
         status: json.status || 'BACKLOG',
-        plannedDate: json.plannedDate ? new Date(json.plannedDate) : new Date(),
+        plannedDate: dateValue ? new Date(dateValue) : new Date(),
         dueDate: json.dueDate ? new Date(json.dueDate) : null,
         estimateMinutes: json.estimateMinutes || null,
+        scheduledStart: json.scheduledStart ? new Date(json.scheduledStart) : null,
+        scheduledEnd: json.scheduledEnd ? new Date(json.scheduledEnd) : null,
       },
     })
-    return NextResponse.json(task)
+    
+    // Transform task to include legacy date field for backward compatibility
+    const transformedTask = {
+      ...task,
+      date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+    }
+    
+    return NextResponse.json(transformedTask)
   } catch (error) {
     console.error('Error creating task:', error)
     return NextResponse.json({ error: 'Error creating task' }, { status: 500 })
@@ -105,17 +125,31 @@ export async function PUT(request: Request) {
     if (data.description !== undefined) updateData.description = data.description
     if (data.priority !== undefined) updateData.priority = data.priority
     if (data.status !== undefined) updateData.status = data.status
+    
+    // Handle both plannedDate and legacy date field
     if (data.plannedDate !== undefined) updateData.plannedDate = data.plannedDate ? new Date(data.plannedDate) : null
+    else if (data.date !== undefined) updateData.plannedDate = data.date ? new Date(data.date) : null
+    
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
     if (data.estimateMinutes !== undefined) updateData.estimateMinutes = data.estimateMinutes
     if (data.actualMinutes !== undefined) updateData.actualMinutes = data.actualMinutes
     if (data.order !== undefined) updateData.order = data.order
+    if (data.scheduledStart !== undefined) updateData.scheduledStart = data.scheduledStart ? new Date(data.scheduledStart) : null
+    if (data.scheduledEnd !== undefined) updateData.scheduledEnd = data.scheduledEnd ? new Date(data.scheduledEnd) : null
     
     const task = await prisma.task.update({
       where: { id },
       data: updateData,
     })
-    return NextResponse.json(task)
+    
+    // Transform task to include legacy date field for backward compatibility
+    const transformedTask = {
+      ...task,
+      date: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+      plannedDate: task.plannedDate ? task.plannedDate.toISOString().split('T')[0] : null,
+    }
+    
+    return NextResponse.json(transformedTask)
   } catch (error) {
     console.error('Error updating task:', error)
     return NextResponse.json({ error: 'Error updating task' }, { status: 500 })
