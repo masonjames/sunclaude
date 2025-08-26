@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Wifi, WifiOff, RefreshCw, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isFeatureEnabled } from '@/lib/flags'
 
 interface RealtimeSyncContextType {
   isConnected: boolean
@@ -32,6 +33,7 @@ interface RealtimeSyncProviderProps {
 
 export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
   const { data: session } = useSession()
+  const realtimeEnabled = isFeatureEnabled('realtime')
   
   const {
     status,
@@ -41,7 +43,7 @@ export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
     lastSync,
     error
   } = useRealtimeSync({
-    enabled: !!session?.user, // Only enable when authenticated
+    enabled: realtimeEnabled && !!session?.user, // Only enable when feature flag is on and authenticated
     pollingInterval: 30000, // 30 seconds
     reconnectDelay: 5000,
     maxReconnectAttempts: 5,
@@ -58,7 +60,7 @@ export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
   return (
     <RealtimeSyncContext.Provider value={contextValue}>
       {children}
-      <SyncStatusIndicator />
+      {realtimeEnabled && <SyncStatusIndicator />}
     </RealtimeSyncContext.Provider>
   )
 }

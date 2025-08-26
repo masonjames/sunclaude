@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/db'
 import { authOptions } from '@/lib/auth'
+import { enqueueCalendarUpdate, enqueueCalendarDelete } from '@/app/services/sync-engine'
 
 export async function GET(request: NextRequest) {
   try {
@@ -92,6 +93,16 @@ export async function POST(request: Request) {
       },
     })
     
+    // Trigger calendar sync if task is scheduled
+    if (task.scheduledStart && task.scheduledEnd) {
+      try {
+        await enqueueCalendarUpdate(session.user.id, task)
+      } catch (calendarError) {
+        console.warn('Failed to sync task to calendar:', calendarError)
+        // Don't fail task creation due to calendar sync issues
+      }
+    }
+    
     // Transform task to include legacy date field for backward compatibility
     const transformedTask = {
       ...task,
@@ -158,6 +169,24 @@ export async function PUT(request: Request) {
       data: updateData,
     })
     
+    // Trigger calendar sync if task has scheduled times or if scheduling changed
+    const hasScheduledTimes = task.scheduledStart && task.scheduledEnd
+    const schedulingChanged = data.scheduledStart !== undefined || data.scheduledEnd !== undefined
+    
+    if (hasScheduledTimes || schedulingChanged) {
+      try {
+        if (hasScheduledTimes) {
+          await enqueueCalendarUpdate(session.user.id, task)
+        } else {
+          // If task was unscheduled, remove from calendar
+          await enqueueCalendarDelete(session.user.id, task.id)
+        }
+      } catch (calendarError) {
+        console.warn('Failed to sync task changes to calendar:', calendarError)
+        // Don't fail task update due to calendar sync issues
+      }
+    }
+    
     // Transform task to include legacy date field for backward compatibility
     const transformedTask = {
       ...task,
@@ -170,5 +199,54 @@ export async function PUT(request: Request) {
   } catch (error) {
     console.error('Error updating task:', error)
     return NextResponse.json({ error: 'Error updating task' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Task ID is required' }, { status: 400 })
+    }
+    
+    // Verify task ownership before deleting
+    const existingTask = await prisma.task.findFirst({
+      where: { 
+        id,
+        userId: session.user.id // Ensure user owns the task
+      }
+    })
+    
+    if (!existingTask) {
+      return NextResponse.json({ error: 'Task not found or access denied' }, { status: 404 })
+    }
+    
+    // Delete the task
+    await prisma.task.delete({
+      where: { id }
+    })
+    
+    // Remove from calendar if it was scheduled
+    if (existingTask.scheduledStart && existingTask.scheduledEnd) {
+      try {
+        await enqueueCalendarDelete(session.user.id, id)
+      } catch (calendarError) {
+        console.warn('Failed to remove task from calendar:', calendarError)
+        // Don't fail task deletion due to calendar sync issues
+      }
+    }
+    
+    return NextResponse.json({ success: true, id })
+  } catch (error) {
+    console.error('Error deleting task:', error)
+    return NextResponse.json({ error: 'Error deleting task' }, { status: 500 })
   }
 }

@@ -1,6 +1,19 @@
+import type { Task } from '@prisma/client'
+import { prisma } from '@/lib/db'
+
 export interface SyncJob {
   id: string
-  type: 'google_calendar' | 'gmail' | 'github' | 'notion' | 'asana' | 'slack'
+  type: 
+    | 'google_calendar'                // legacy alias for sync
+    | 'google_calendar_sync'
+    | 'google_calendar_update'
+    | 'google_calendar_delete'
+    | 'google_calendar_watch'
+    | 'gmail'
+    | 'github'
+    | 'notion'
+    | 'asana'
+    | 'slack'
   userId: string
   payload?: any
   priority?: number
@@ -49,7 +62,14 @@ export async function process(job: SyncJob): Promise<SyncJobResult> {
   try {
     switch (job.type) {
       case 'google_calendar':
+      case 'google_calendar_sync':
         return await processGoogleCalendarSync(job)
+      case 'google_calendar_update':
+        return await processGoogleCalendarUpdate(job)
+      case 'google_calendar_delete':
+        return await processGoogleCalendarDelete(job)
+      case 'google_calendar_watch':
+        return await processGoogleCalendarWatch(job)
       case 'gmail':
         return await processGmailSync(job)
       case 'github':
@@ -120,6 +140,54 @@ async function processGoogleCalendarSync(job: SyncJob): Promise<SyncJobResult> {
       error: error instanceof Error ? error.message : 'Unknown error',
       syncedCount: 0 
     }
+  }
+}
+
+async function processGoogleCalendarUpdate(job: SyncJob): Promise<SyncJobResult> {
+  try {
+    const { updateEventFromTask } = await import('./integrations/google/calendar')
+    const calendarId: string = job.payload?.calendarId || 'primary'
+    let task: Task | null = job.payload?.task || null
+
+    // Fallback: fetch by id if only taskId provided
+    const taskId: string | undefined = job.payload?.taskId || job.payload?.task?.id
+    if (!task && taskId) {
+      task = await prisma.task.findUnique({ where: { id: taskId } })
+    }
+    if (!task) throw new Error('Missing task or taskId in payload')
+
+    const event = await updateEventFromTask(job.userId, task, calendarId)
+    return { success: true, data: event }
+  } catch (error) {
+    console.error('[SyncEngine] Google Calendar update failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+async function processGoogleCalendarDelete(job: SyncJob): Promise<SyncJobResult> {
+  try {
+    const { deleteEventForTask } = await import('./integrations/google/calendar')
+    const calendarId: string = job.payload?.calendarId || 'primary'
+    const taskId: string | undefined = job.payload?.taskId || job.payload?.task?.id
+    if (!taskId) throw new Error('Missing taskId in payload')
+
+    await deleteEventForTask(job.userId, taskId, calendarId)
+    return { success: true }
+  } catch (error) {
+    console.error('[SyncEngine] Google Calendar delete failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+async function processGoogleCalendarWatch(job: SyncJob): Promise<SyncJobResult> {
+  try {
+    const { watchCalendar } = await import('./integrations/google/calendar')
+    const calendarId: string = job.payload?.calendarId || 'primary'
+    const res = await watchCalendar(job.userId, calendarId)
+    return { success: true, data: res }
+  } catch (error) {
+    console.error('[SyncEngine] Google Calendar watch failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
@@ -250,4 +318,45 @@ export function getQueueStatus(): {
       retries: job.retries || 0
     }))
   }
+}
+
+// Calendar sync convenience helpers
+export async function enqueueCalendarSync(userId: string, calendarId?: string): Promise<void> {
+  return enqueue({
+    id: generateJobId(),
+    type: 'google_calendar_sync',
+    userId,
+    payload: { calendarId },
+    priority: 2,
+  })
+}
+
+export async function enqueueCalendarUpdate(userId: string, task: Task, calendarId?: string): Promise<void> {
+  return enqueue({
+    id: generateJobId(),
+    type: 'google_calendar_update',
+    userId,
+    payload: { task, calendarId },
+    priority: 2,
+  })
+}
+
+export async function enqueueCalendarDelete(userId: string, taskId: string, calendarId?: string): Promise<void> {
+  return enqueue({
+    id: generateJobId(),
+    type: 'google_calendar_delete',
+    userId,
+    payload: { taskId, calendarId },
+    priority: 2,
+  })
+}
+
+export async function enqueueCalendarWatch(userId: string, calendarId?: string): Promise<void> {
+  return enqueue({
+    id: generateJobId(),
+    type: 'google_calendar_watch',
+    userId,
+    payload: { calendarId },
+    priority: 2.5, // slightly higher to establish/renew channels promptly
+  })
 }
