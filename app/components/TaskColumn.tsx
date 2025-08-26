@@ -17,10 +17,10 @@ interface TaskColumnProps {
 }
 
 export const STATUS_LANES = [
-  { key: 'PLANNED', label: 'Planned', color: 'bg-blue-50 border-blue-200' },
-  { key: 'SCHEDULED', label: 'Scheduled', color: 'bg-green-50 border-green-200' },
-  { key: 'IN_PROGRESS', label: 'In Progress', color: 'bg-yellow-50 border-yellow-200' },
-  { key: 'DONE', label: 'Done', color: 'bg-gray-50 border-gray-200' },
+  { key: 'PLANNED', label: 'Planned', color: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' },
+  { key: 'SCHEDULED', label: 'Scheduled', color: 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800' },
+  { key: 'IN_PROGRESS', label: 'In Progress', color: 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800' },
+  { key: 'DONE', label: 'Done', color: 'bg-gray-50 dark:bg-gray-950/30 border-gray-200 dark:border-gray-800' },
 ] as const
 
 function StatusLane({ status, tasks, dateStr, onTimerToggle }: {
@@ -78,9 +78,14 @@ export function TaskColumn({ date, tasks, isToday, onTimerToggle }: TaskColumnPr
     id: dateStr 
   })
   
-  // Group tasks by status (fallback to PLANNED if no status)
+  // Group tasks by status (fallback to PLANNED if no status, treat BACKLOG as PLANNED)
   const tasksByStatus = STATUS_LANES.reduce((acc, lane) => {
-    acc[lane.key] = tasks.filter(task => (task.status || 'PLANNED') === lane.key)
+    acc[lane.key] = tasks.filter(task => {
+      const taskStatus = task.status || 'PLANNED'
+      // Show BACKLOG tasks in PLANNED lane for now
+      if (taskStatus === 'BACKLOG' && lane.key === 'PLANNED') return true
+      return taskStatus === lane.key
+    })
     return acc
   }, {} as Record<string, Task[]>)
 

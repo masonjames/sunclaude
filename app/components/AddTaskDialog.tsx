@@ -38,7 +38,7 @@ import { useApi } from "@/hooks/use-api"
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  priority: z.enum(["low", "medium", "high"]),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
   dueTime: z.string().optional(),
   date: z.string(),
 })
@@ -56,7 +56,7 @@ export function AddTaskDialog({ onTaskAdded }: AddTaskDialogProps) {
     defaultValues: {
       title: "",
       description: "",
-      priority: "medium",
+      priority: "MEDIUM",
       date: new Date().toISOString().split("T")[0],
     },
   })
@@ -141,9 +141,9 @@ export function AddTaskDialog({ onTaskAdded }: AddTaskDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="LOW">Low</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

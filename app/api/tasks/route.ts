@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         title: json.title,
         description: json.description || null,
         priority: json.priority || 'MEDIUM',
-        status: json.status || 'BACKLOG',
+        status: json.status || 'PLANNED',
         plannedDate: dateValue ? new Date(dateValue) : new Date(),
         dueDate: json.dueDate ? new Date(json.dueDate) : null,
         estimateMinutes: json.estimateMinutes || null,

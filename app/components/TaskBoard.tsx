@@ -102,11 +102,29 @@ export const TaskBoard = () => {
   React.useEffect(() => {
     fetchTasks(visibleDateRange.start, visibleDateRange.end)
     
-    // Scroll to today's date
-    if (scrollRef.current) {
-      const todayOffset = DAYS_TO_LOAD * COLUMN_WIDTH
-      scrollRef.current.scrollLeft = todayOffset
-    }
+    // Scroll to today's date after a brief delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        const today = new Date()
+        const todayStr = format(today, 'yyyy-MM-dd')
+        
+        // Find today's index in the allDates array
+        let todayIndex = 0
+        let currentDate = visibleDateRange.start
+        while (currentDate <= visibleDateRange.end) {
+          if (format(currentDate, 'yyyy-MM-dd') === todayStr) {
+            break
+          }
+          todayIndex++
+          currentDate = addDays(currentDate, 1)
+        }
+        
+        const todayOffset = todayIndex * COLUMN_WIDTH
+        scrollRef.current.scrollLeft = todayOffset
+      }
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, []) // Empty dependency array for initial load only
 
   // Handle scroll
