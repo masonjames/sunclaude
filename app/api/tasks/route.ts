@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
     
     // Add date range filtering if provided
     if (start || end) {
-      whereClause.date = {}
-      if (start) whereClause.date.gte = start
-      if (end) whereClause.date.lte = end
+      whereClause.plannedDate = {}
+      if (start) whereClause.plannedDate.gte = new Date(start)
+      if (end) whereClause.plannedDate.lte = new Date(end)
     }
     
     const tasks = await prisma.task.findMany({
@@ -58,9 +58,11 @@ export async function POST(request: Request) {
         userId: session.user.id, // Associate with authenticated user
         title: json.title,
         description: json.description || null,
-        priority: json.priority || null,
-        dueTime: json.dueTime || null,
-        date: json.date || new Date().toISOString().split('T')[0], // Default to today
+        priority: json.priority || 'MEDIUM',
+        status: json.status || 'BACKLOG',
+        plannedDate: json.plannedDate ? new Date(json.plannedDate) : new Date(),
+        dueDate: json.dueDate ? new Date(json.dueDate) : null,
+        estimateMinutes: json.estimateMinutes || null,
       },
     })
     return NextResponse.json(task)
@@ -102,8 +104,12 @@ export async function PUT(request: Request) {
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
     if (data.priority !== undefined) updateData.priority = data.priority
-    if (data.dueTime !== undefined) updateData.dueTime = data.dueTime
-    if (data.date !== undefined) updateData.date = data.date
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.plannedDate !== undefined) updateData.plannedDate = data.plannedDate ? new Date(data.plannedDate) : null
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
+    if (data.estimateMinutes !== undefined) updateData.estimateMinutes = data.estimateMinutes
+    if (data.actualMinutes !== undefined) updateData.actualMinutes = data.actualMinutes
+    if (data.order !== undefined) updateData.order = data.order
     
     const task = await prisma.task.update({
       where: { id },

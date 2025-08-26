@@ -1,10 +1,34 @@
+// Production-ready Postgres configuration
+// To use Postgres instead of SQLite:
+// 1. Copy this file to schema.prisma
+// 2. Update DATABASE_URL in .env to your Postgres connection string
+// 3. Run: npx prisma generate && npx prisma db push
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums for PostgreSQL
+enum TaskStatus {
+  BACKLOG
+  PLANNED
+  SCHEDULED
+  IN_PROGRESS
+  DONE
+  DEFERRED
+  CANCELED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 // NextAuth.js Models
@@ -53,7 +77,7 @@ model User {
   calendarEvents CalendarEvent[]
   googleSyncState GoogleSyncState[]
   settings      UserSettings?
-  
+
   @@map("users")
 }
 
@@ -67,35 +91,31 @@ model VerificationToken {
 }
 
 // Application Models
-// SQLite doesn't support enums, we'll use strings with comments for documentation
-// TaskStatus: 'BACKLOG' | 'PLANNED' | 'SCHEDULED' | 'IN_PROGRESS' | 'DONE' | 'DEFERRED' | 'CANCELED'
-// TaskPriority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-
 model Task {
   id               String         @id @default(cuid())
   userId           String         @map("user_id")
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   title            String
   description      String?
-  priority         String?        @default("MEDIUM") // 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  status           String         @default("BACKLOG") // 'BACKLOG' | 'PLANNED' | 'SCHEDULED' | 'IN_PROGRESS' | 'DONE' | 'DEFERRED' | 'CANCELED'
-  plannedDate      DateTime?      // The day the task is planned for (board)
-  dueDate          DateTime?
+  priority         TaskPriority?  @default(MEDIUM)
+  status           TaskStatus     @default(BACKLOG)
+  plannedDate      DateTime?      @db.Date // The day the task is planned for (board)
+  dueDate          DateTime?      @db.Date
   scheduledStart   DateTime?
   scheduledEnd     DateTime?
   estimateMinutes  Int?           // planned effort
   actualMinutes    Int?           @default(0)
   order            Int            @default(0) // sort within column/day
   parentId         String?        @map("parent_id") // self-relation for subtasks
-  parent           Task?          @relation("Subtasks", fields: [parentId], references: [id])
+  parent           Task?          @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks         Task[]         @relation("Subtasks")
   externalLinks    ExternalItem[] // links to integrations
   calendarEvent    CalendarEvent?
   timeEntries      TimeEntry[]
   rolloverCount    Int            @default(0)
   rolledOverFromId String?        @map("rolled_over_from_id")
-  deferredTo       DateTime?
-  deferralReason   String?
+  deferredTo       DateTime?      @db.Date
+  deferralReason   String?        @db.Text
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -128,12 +148,12 @@ model DailyPlan {
   id              String    @id @default(cuid())
   userId          String    @map("user_id")
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date            DateTime
+  date            DateTime  @db.Date
   capacityMinutes Int       @map("capacity_minutes") // from UserSettings
   plannedMinutes  Int       @default(0) @map("planned_minutes")
   startedAt       DateTime? @map("started_at")
   completedAt     DateTime? @map("completed_at")
-  notes           String?
+  notes           String?   @db.Text
   createdAt       DateTime  @default(now()) @map("created_at")
 
   @@unique([userId, date])
@@ -151,7 +171,7 @@ model ExternalItem {
   externalId   String    @map("external_id")
   externalUrl  String?   @map("external_url")
   direction    String    // 'import' | 'export' | 'two-way'
-  data         String?   // JSON string for SQLite
+  data         Json?     @db.JsonB
   lastSyncedAt DateTime? @map("last_synced_at")
   taskId       String?   @map("task_id")
   task         Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
