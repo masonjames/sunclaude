@@ -53,6 +53,7 @@ model User {
   calendarEvents CalendarEvent[]
   googleSyncState GoogleSyncState[]
   settings      UserSettings?
+  integrationConnections IntegrationConnection[]
   
   @@map("users")
 }
@@ -220,4 +221,23 @@ model UserSettings {
   slackWebhookUrl             String? @map("slack_webhook_url")
 
   @@map("user_settings")
+}
+
+// Integration connections for non-OAuth providers (Slack, Notion, etc)
+model IntegrationConnection {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String   // "notion", "slack", etc.
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  expiresAt    DateTime? @map("expires_at")
+  scope        String?
+  metadata     String?  // JSON string for provider-specific data
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("integration_connections")
 }

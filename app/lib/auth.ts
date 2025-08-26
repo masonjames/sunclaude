@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
+import GitHubProvider from "next-auth/providers/github"
 import { prisma } from "@/lib/db"
 
 export const authOptions: NextAuthOptions = {
@@ -19,9 +20,18 @@ export const authOptions: NextAuthOptions = {
             "openid",
             "email", 
             "profile",
-            // We'll add calendar scopes later when implementing integrations
-            // "https://www.googleapis.com/auth/calendar"
+            "https://www.googleapis.com/auth/calendar",
+            "https://www.googleapis.com/auth/gmail.readonly",
           ].join(" "),
+        },
+      },
+    }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
+      authorization: {
+        params: {
+          scope: "read:user user:email repo",
         },
       },
     }),
