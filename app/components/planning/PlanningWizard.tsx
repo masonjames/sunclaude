@@ -12,7 +12,7 @@ import { StepSchedule } from './steps/StepSchedule';
 import { StepSummary } from './steps/StepSummary';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/contexts/ToastContext';
 
 interface PlanningWizardProps {
   open: boolean;
@@ -48,6 +48,7 @@ export function PlanningWizard({
   
   const [loading, setLoading] = useState(false);
   const [committing, setCommitting] = useState(false);
+  const { error: showError, success } = useToast();
   
   const currentStepIndex = steps.findIndex(s => s.id === currentStep);
   const CurrentStepComponent = steps[currentStepIndex].component;
@@ -80,11 +81,7 @@ export function PlanningWizard({
       }
     } catch (error) {
       console.error('Error fetching planning data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load planning data",
-        variant: "destructive",
-      });
+      showError("Error", "Failed to load planning data");
     } finally {
       setLoading(false);
     }
@@ -116,10 +113,7 @@ export function PlanningWizard({
       });
       
       if (response.ok) {
-        toast({
-          title: "Plan Committed",
-          description: `Successfully planned ${selections.length} tasks`,
-        });
+        success("Plan Committed", `Successfully planned ${selections.length} tasks`);
         onPlanCommitted();
         onClose();
       } else {
@@ -127,11 +121,7 @@ export function PlanningWizard({
       }
     } catch (error) {
       console.error('Error committing plan:', error);
-      toast({
-        title: "Error",
-        description: "Failed to commit plan",
-        variant: "destructive",
-      });
+      showError("Error", "Failed to commit plan");
     } finally {
       setCommitting(false);
     }

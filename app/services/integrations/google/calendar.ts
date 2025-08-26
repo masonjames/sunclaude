@@ -2,7 +2,7 @@ import { google, calendar_v3 } from 'googleapis'
 import { prisma } from '@/lib/db'
 import { withGoogleClient } from '@/lib/oauth/google'
 import { Task } from '@prisma/client'
-import { addHours } from 'date-fns'
+import { addHours, addDays } from 'date-fns'
 
 const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -38,7 +38,8 @@ export function taskToGoogleEvent(
       summary: task.title,
       description: task.description || undefined,
       start: { date: task.plannedDate.toISOString().slice(0, 10) },
-      end: { date: task.plannedDate.toISOString().slice(0, 10) }, // same-day all-day
+      // Google all-day events use exclusive end date (next day)
+      end: { date: addDays(task.plannedDate, 1).toISOString().slice(0, 10) },
       extendedProperties: { private: { taskId: task.id } },
     }
   }
@@ -182,7 +183,10 @@ export async function createEventFromTask(
   return withGoogleClient(userId, async (auth) => {
     const calendar = google.calendar({ version: 'v3', auth })
     
-    const eventBody = taskToGoogleEvent(task)
+    // Pass user's timezone for correctness
+    const settings = await prisma.userSettings.findUnique({ where: { userId } })
+    const timeZone = settings?.timezone || 'UTC'
+    const eventBody = taskToGoogleEvent(task, { timeZone })
 
     const response = await calendar.events.insert({
       calendarId,
@@ -248,7 +252,9 @@ export async function updateEventFromTask(
       return await createEventFromTask(userId, task, calendarId)
     }
 
-    const requestBody = taskToGoogleEvent(task)
+    const settings = await prisma.userSettings.findUnique({ where: { userId } })
+    const timeZone = settings?.timezone || 'UTC'
+    const requestBody = taskToGoogleEvent(task, { timeZone })
     const res = await calendar.events.patch({
       calendarId: link.calendarId || calendarId,
       eventId: link.eventId,
@@ -332,7 +338,7 @@ export async function syncIncremental(
           showDeleted: true, // to receive cancellations
           ...(needSeed
             ? { timeMin: timeMin.toISOString(), timeMax: timeMax.toISOString(), orderBy: 'startTime' as const }
-            : { syncToken }),
+            : syncToken ? { syncToken } : {}),
           pageToken,
         }
 

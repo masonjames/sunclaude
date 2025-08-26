@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
 import { useSidebar } from "@/components/ui/sidebar"
-import { Calendar, Focus, ChevronLeft, ChevronRight, Sun, LogOut, User, Settings } from "lucide-react"
+import { KeyboardShortcutsHelpStandalone } from "@/components/ui/keyboard-shortcuts-help"
+import { Calendar, Focus, ChevronLeft, ChevronRight, Sun, LogOut, User, Settings, Keyboard } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSession, signOut } from "next-auth/react"
 
@@ -88,6 +89,8 @@ export function MainSidebar() {
           <Settings className="h-4 w-4" />
           {isOpen && <span className="ml-2">Settings</span>}
         </Button>
+        
+        <KeyboardShortcutsHelpStandalone />
       </nav>
       <div className="mt-auto">
         {isOpen && session && (

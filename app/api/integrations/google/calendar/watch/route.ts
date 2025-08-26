@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-import { watchCalendar, stopWatchCalendar } from '@/app/services/integrations/google/calendar'
+import { authOptions } from '@/lib/auth'
+import { watchCalendar, stopWatchCalendar } from '@/services/integrations/google/calendar'
 
 export async function POST(request: NextRequest) {
   console.log('[Calendar Watch] Starting watch channel registration')

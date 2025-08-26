@@ -1,12 +1,11 @@
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
-import { Toaster } from "@/components/ui/toaster"
-import { Toaster as HotToaster } from 'react-hot-toast'
 import { AuthProvider } from "@/components/auth-provider"
 import { ToastProvider } from "@/contexts/ToastContext"
-import { ToastContainer } from "@/components/ui/toast"
+import { ToastContainer } from "@/components/ui/notification"
 import { TaskStoreProvider } from "@/components/providers/TaskStoreProvider"
+import { KeyboardShortcutsProvider } from "@/components/providers/KeyboardShortcutsProvider"
 
 export const metadata = {
   title: 'Sunclaude - Task Management',
@@ -46,23 +45,12 @@ export default function RootLayout({
           >
             <ToastProvider>
               <TaskStoreProvider>
-                <SidebarProvider>
-                  {children}
-                </SidebarProvider>
+                <KeyboardShortcutsProvider>
+                  <SidebarProvider>
+                    {children}
+                  </SidebarProvider>
+                </KeyboardShortcutsProvider>
               </TaskStoreProvider>
-              <Toaster />
-              <HotToaster 
-                position="bottom-right"
-                toastOptions={{
-                  className: '',
-                  duration: 4000,
-                  style: {
-                    background: 'hsl(var(--background))',
-                    color: 'hsl(var(--foreground))',
-                    border: '1px solid hsl(var(--border))',
-                  },
-                }}
-              />
               <ToastContainer />
             </ToastProvider>
           </ThemeProvider>
