@@ -30,22 +30,39 @@ export async function getNotionItems(accessToken: string): Promise<NotionItem[]>
     
     for (const page of response.results) {
       if ('properties' in page) {
-        const title = page.properties.Name?.title?.[0]?.plain_text || 
-                     page.properties.Title?.title?.[0]?.plain_text || 
+        // Type guard helper for title properties
+        const getTitleFromProperty = (prop: any) => {
+          return prop && 'title' in prop ? prop.title?.[0]?.plain_text : undefined
+        }
+        
+        const getDateFromProperty = (prop: any) => {
+          return prop && 'date' in prop ? prop.date?.start : undefined
+        }
+        
+        const getSelectFromProperty = (prop: any) => {
+          return prop && 'select' in prop ? prop.select?.name : undefined
+        }
+        
+        const getRichTextFromProperty = (prop: any) => {
+          return prop && 'rich_text' in prop ? prop.rich_text?.[0]?.plain_text : undefined
+        }
+
+        const title = getTitleFromProperty(page.properties.Name) || 
+                     getTitleFromProperty(page.properties.Title) || 
                      'Untitled'
         
-        const dueDate = page.properties.Due?.date?.start ||
-                       page.properties['Due Date']?.date?.start
+        const dueDate = getDateFromProperty(page.properties.Due) ||
+                       getDateFromProperty(page.properties['Due Date'])
 
-        const priority = page.properties.Priority?.select?.name?.toLowerCase()
+        const priorityName = getSelectFromProperty(page.properties.Priority)?.toLowerCase()
 
         items.push({
           id: page.id,
           title,
-          description: page.properties.Description?.rich_text?.[0]?.plain_text,
+          description: getRichTextFromProperty(page.properties.Description),
           dueDate,
-          priority: priority === 'high' ? 'high' :
-                   priority === 'low' ? 'low' : 'medium'
+          priority: priorityName === 'high' ? 'high' :
+                   priorityName === 'low' ? 'low' : 'medium'
         })
       }
     }

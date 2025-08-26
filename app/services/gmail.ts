@@ -47,7 +47,7 @@ export async function getGmailItems(accessToken: string): Promise<GmailItem[]> {
           title: subject,
           description: `From: ${from}`,
           dueDate: date ? new Date(date).toISOString() : undefined,
-          priority: "medium"
+          priority: "medium" as const
         }
       })
     )

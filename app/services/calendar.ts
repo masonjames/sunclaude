@@ -35,7 +35,7 @@ export async function getCalendarItems(accessToken: string): Promise<CalendarIte
     return (response.data.items || []).map(event => ({
       id: event.id!,
       title: event.summary || 'Untitled Event',
-      description: event.description,
+      description: event.description || undefined,
       dueDate: event.start?.dateTime || event.start?.date || '',
       priority: event.colorId ? 
         parseInt(event.colorId) > 7 ? "high" : 

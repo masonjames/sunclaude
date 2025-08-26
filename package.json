@@ -27,6 +27,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
+    "encoding": "^0.1.13",
     "googleapis": "^129.0.0",
     "lucide-react": "^0.294.0",
     "next": "^15.1.0",
@@ -42,6 +43,7 @@
   "devDependencies": {
     "@prisma/client": "^6.0.1",
     "@tailwindcss/forms": "^0.5.7",
+    "@types/asana": "^0.18.16",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
