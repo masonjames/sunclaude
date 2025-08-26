@@ -36,12 +36,31 @@ A modern task management application built with Next.js, featuring focus modes a
    npm install
    ```
 
-3. Run the development server:
+3. Set up environment variables:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   
+   Then edit `.env.local` and add your Google OAuth credentials:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing
+   - Enable Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
+   - Set authorized origins: `http://localhost:3000`
+   - Set authorized redirect URIs: `http://localhost:3000/api/auth/callback/google`
+   - Copy Client ID and Client Secret to your `.env.local`
+
+4. Set up the database:
+   ```bash
+   npx prisma db push
+   ```
+
+5. Run the development server:
    ```bash
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Development
 
